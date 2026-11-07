@@ -1,0 +1,16 @@
+{
+  "name": "La Chaîne des Quiz",
+  "short_name": "Quiz Blockchain",
+  "description": "Quiz à niveaux du MOOC Blockchain and Digital Assets",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef1f0",
+  "theme_color": "#b9770e",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>La Chaîne des Quiz</title>
+<meta name="theme-color" content="#b9770e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Quiz Blockchain">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Layout: une chaîne verticale de blocs (niveaux) reliés par leur hash ; un bloc se « mine » en réussissant son quiz. */
+:root{
+  --bg:#eef1f0; --surface:#fbfcfc; --ink:#14201e; --muted:#5a6866; --line:#cdd6d4;
+  --accent:#b9770e; --accent-ink:#ffffff; --good:#1f7a4d; --good-bg:#e1f2e8; --bad:#b3362c; --bad-bg:#f8e3e0;
+  --display:"Segoe UI",Roboto,system-ui,sans-serif; --body:system-ui,-apple-system,Roboto,"Segoe UI",sans-serif; --mono:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1716; --surface:#172221; --ink:#e4ecea; --muted:#93a3a0; --line:#2b3b39;
+  --accent:#e2a23b; --accent-ink:#1a1206; --good:#5fcf94; --good-bg:#16382a; --bad:#f08178; --bad-bg:#3d1c19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1716; --surface:#172221; --ink:#e4ecea; --muted:#93a3a0; --line:#2b3b39;
+  --accent:#e2a23b; --accent-ink:#1a1206; --good:#5fcf94; --good-bg:#16382a; --bad:#f08178; --bad-bg:#3d1c19; color-scheme:dark}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,5vw,2.1rem);line-height:1.15;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:8px 0 0;max-width:60ch}
+.rule{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-top:14px;letter-spacing:.02em}
+.rule b{color:var(--accent)}
+.chain{display:flex;flex-direction:column;margin-top:28px}
+.link{height:26px;margin-left:30px;border-left:2px dashed var(--line)}
+.link.ok{border-left:2px solid var(--accent)}
+.block{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.block.locked{opacity:.55}
+.num{width:44px;height:44px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;border:2px solid var(--line);color:var(--muted)}
+.block.mined .num{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.block.open .num{border-color:var(--accent);color:var(--accent)}
+.info{min-width:0;display:flex;flex-direction:column;gap:6px}
+.info h2{font-family:var(--display);font-weight:500;font-size:1.02rem;margin:0;line-height:1.3}
+.meta{font-family:var(--mono);font-size:.75rem;color:var(--muted);overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:4px}
+.chip{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.chip.ok{border-color:var(--good);color:var(--good);background:var(--good-bg)}
+.chip.ko{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}
+button{font:inherit;cursor:pointer;border-radius:8px}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;padding:10px 16px;font-weight:700}
+.btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);padding:9px 14px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:16px 0 22px}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.qnum{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.q{font-family:var(--display);font-weight:500;font-size:clamp(1.05rem,3.6vw,1.3rem);line-height:1.35;margin:0 0 18px;text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{text-align:left;background:var(--surface);color:var(--ink);border:1px solid var(--line);padding:13px 14px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{font-family:var(--mono);font-weight:600;color:var(--muted)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:var(--good-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.fb{margin-top:16px;padding:14px;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
+.fb strong{display:block;margin-bottom:4px}
+.fb.ok strong{color:var(--good)} .fb.ko strong{color:var(--bad)}
+.next{margin-top:16px;display:flex;justify-content:flex-end}
+.score{font-family:var(--display);font-weight:700;font-size:clamp(3rem,14vw,5rem);line-height:1;font-variant-numeric:tabular-nums}
+.score small{font-size:.4em;color:var(--muted)}
+.verdict{font-size:1.1rem;margin:10px 0 20px}
+.review{display:flex;flex-direction:column;gap:12px;margin-top:22px}
+.review div{border-left:3px solid var(--bad);padding:4px 0 4px 12px}
+.review p{margin:0} .review .a{color:var(--good);font-weight:700}
+.foot{margin-top:36px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app"></div>
+
+<script>
+const PASS=15, TOTAL=20;
+const LEVELS=[
+{id:"s1",title:"Introduction à la blockchain et au Web3",src:"Session 1 · support PDF et vidéos",qs:[
+["Qu'est-ce qu'une blockchain, au sens le plus simple ?",["Un registre partagé où l'on ajoute des blocs sans pouvoir réécrire les anciens","Une base de données gérée par une seule banque","Un logiciel de minage","Un type de cryptomonnaie"],0,"C'est un registre distribué, en ajout seul : chaque participant en garde une copie et on n'ajoute que de nouveaux blocs."],
+["Que se passe-t-il si on change une seule lettre dans l'entrée d'une fonction de hachage ?",["Le hash change d'une lettre","Le hash reste identique","Le hash devient complètement différent","La fonction renvoie une erreur"],2,"C'est l'effet avalanche : une infime modification donne une empreinte totalement différente. C'est ce qui rend toute falsification visible."],
+["Qu'est-ce qui relie un bloc au précédent ?",["La date du bloc","Le hash du bloc précédent, inscrit dans son en-tête","L'adresse du mineur","Le montant total des transactions"],1,"Chaque bloc contient l'empreinte du bloc d'avant. Modifier un bloc casse tous les liens qui suivent."],
+["Pourquoi est-il si difficile de modifier une transaction ancienne sur Bitcoin ?",["Elle est chiffrée par la police","Il faudrait refaire le travail de ce bloc et de tous les suivants, plus vite que le reste du réseau","Les anciennes transactions sont supprimées","Seul Satoshi peut le faire"],1,"Il faudrait recalculer la preuve de travail de toute la chaîne qui suit et dépasser la majorité de la puissance de calcul."],
+["Quel problème la blockchain a-t-elle résolu pour la monnaie numérique ?",["La double dépense sans tiers de confiance","L'inflation","Le stockage des photos","La vitesse d'Internet"],0,"Un fichier numérique se copie. Sans banque, il fallait empêcher de dépenser deux fois la même unité : le registre partagé et le consensus le permettent."],
+["Quel est le rôle d'un nœud ?",["Imprimer des billets","Garder une copie du registre et vérifier les règles","Fixer le prix","Stocker les mots de passe"],1,"Un nœud vérifie chaque bloc et chaque transaction selon les règles du protocole et refuse ce qui est invalide."],
+["Avec quelle clé signe-t-on une transaction ?",["La clé publique","La clé privée","L'adresse","Le hash du bloc"],1,"La clé privée signe ; la clé publique permet à tout le monde de vérifier la signature sans connaître la clé privée."],
+["Que prouve une signature numérique valide ?",["Que la transaction est gratuite","Que le détenteur de la clé privée a autorisé la transaction et qu'elle n'a pas été modifiée","L'identité civile de l'expéditeur","Que le bloc est miné"],1,"Elle prouve l'autorisation et l'intégrité du message, pas l'identité réelle de la personne."],
+["Comment résume-t-on souvent l'évolution Web1 → Web2 → Web3 ?",["Lire → Lire et écrire → Lire, écrire et posséder","Texte → Images → Vidéo","Ordinateur → Mobile → Montre","Gratuit → Payant → Gratuit"],0,"Le Web3 ajoute la propriété : l'utilisateur détient ses actifs et ses données via ses clés."],
+["En preuve de travail, comment un mineur gagne-t-il le droit d'ajouter un bloc ?",["Par tirage au sort parmi les plus riches","En trouvant par essais successifs un hash inférieur à une cible","Par vote des utilisateurs","En payant une licence"],1,"Il essaie des milliards de valeurs (le nonce) jusqu'à obtenir un hash sous la cible fixée par la difficulté."],
+["En preuve d'enjeu, qu'est-ce qui sécurise le réseau ?",["L'électricité consommée","Les jetons que les validateurs engagent et peuvent perdre s'ils trichent","Les serveurs d'une entreprise","Les mots de passe"],1,"Les validateurs mettent leurs jetons en jeu. Tricher coûte cher, sans dépense énergétique massive."],
+["Quelle est la différence entre une blockchain publique et une blockchain permissionnée ?",["Aucune","Sur une publique, n'importe qui peut participer ; sur une permissionnée, l'accès est contrôlé","La publique est gratuite, l'autre payante","La permissionnée n'utilise pas de blocs"],1,"Bitcoin et Ethereum sont ouvertes à tous. Une blockchain d'entreprise réserve la validation à des participants autorisés."],
+["Quand a été miné le bloc genèse de Bitcoin ?",["Janvier 2009","Octobre 2008","Mars 2013","Juillet 2015"],0,"Le livre blanc date d'octobre 2008, le bloc genèse du 3 janvier 2009."],
+["Que signifie « immuable » pour une blockchain, en pratique ?",["Rien ne peut jamais changer, même en théorie","Modifier l'historique est si coûteux que c'est pratiquement impossible","Les prix ne bougent pas","Le code ne peut jamais être mis à jour"],1,"L'immuabilité est économique et pratique, pas absolue : elle repose sur le coût d'une réécriture."],
+["Qu'est-ce qu'un contrat intelligent ?",["Un contrat papier signé chez un notaire","Un programme sur la blockchain qui s'exécute automatiquement selon ses règles","Une IA qui négocie","Un accord entre mineurs"],1,"C'est du code déployé sur la chaîne : si les conditions sont remplies, il s'exécute sans intermédiaire."],
+["Quel est le rôle d'un oracle ?",["Prédire le prix futur","Apporter à la blockchain des données du monde extérieur","Miner des blocs","Garder les clés"],1,"Une blockchain ne voit pas le monde extérieur. L'oracle lui transmet des données comme un cours ou un résultat sportif."],
+["Qu'est-ce qui caractérise un NFT ?",["Il est interchangeable avec un autre","Il est unique et non interchangeable","C'est toujours une image","Il n'a pas de propriétaire"],1,"Non fongible veut dire qu'un jeton n'équivaut pas à un autre, contrairement à un bitcoin qui vaut un autre bitcoin."],
+["Qu'est-ce qu'un stablecoin ?",["Une crypto dont la valeur suit un actif de référence comme le dollar","Une crypto qui ne peut pas baisser","Une crypto minée lentement","Une monnaie de banque centrale"],0,"USDT ou USDC suivent le dollar. Leur stabilité dépend des réserves ou du mécanisme qui les soutient."],
+["Quels sont les trois termes du « trilemme de la blockchain » ?",["Prix, volume, liquidité","Décentralisation, sécurité, scalabilité","Vitesse, frais, design","Minage, staking, trading"],1,"Il est difficile d'obtenir les trois à la fois : gagner en débit se paie souvent en décentralisation."],
+["À quoi sert une solution de couche 2 (layer 2) ?",["Remplacer la blockchain principale","Traiter des transactions hors de la chaîne principale puis régler le résultat dessus","Doubler l'offre de jetons","Stocker des fichiers"],1,"Lightning pour Bitcoin ou les rollups pour Ethereum augmentent le débit en s'appuyant sur la sécurité de la couche 1."]
+]},
+{id:"s2",title:"Bitcoin et monnaie numérique",src:"Q&R n°2 · Garrick Hileman",qs:[
+["Quel est le nombre maximal de bitcoins ?",["21 millions","100 millions","Illimité","2,1 milliards"],0,"L'offre est plafonnée à 21 millions par le protocole."],
+["Que divise un halving ?",["Le prix du bitcoin","La récompense de bloc des mineurs","Les frais de transaction","Le nombre de nœuds"],1,"Tous les 210 000 blocs, soit environ quatre ans, la nouvelle émission par bloc est divisée par deux."],
+["Après le halving d'avril 2024, quelle est la subvention par bloc ?",["6,25 BTC","3,125 BTC","12,5 BTC","1,5625 BTC"],1,"Elle est passée de 6,25 à 3,125 BTC. Le prochain halving est attendu vers 2028."],
+["Quel est le temps moyen entre deux blocs Bitcoin ?",["1 minute","10 minutes","1 heure","15 secondes"],1,"Environ 10 minutes, maintenu par l'ajustement de difficulté."],
+["Tous les combien la difficulté de minage s'ajuste-t-elle ?",["Chaque bloc","Tous les 2016 blocs, environ deux semaines","Chaque année","Jamais"],1,"Si les blocs ont été trop rapides, la difficulté monte ; trop lents, elle baisse."],
+["Comment s'appelle la plus petite unité de bitcoin ?",["Le wei","Le satoshi","Le lovelace","Le gwei"],1,"1 satoshi = 0,00000001 BTC."],
+["Selon quoi se calculent les frais d'une transaction Bitcoin ?",["Le montant envoyé","La taille de la transaction en données et la demande du moment","La distance entre les pays","L'âge du portefeuille"],1,"On paie la place occupée dans le bloc (en vbytes), pas la somme envoyée."],
+["Qu'est-ce que le mempool ?",["La réserve d'un exchange","La file d'attente des transactions pas encore incluses dans un bloc","Un pool de minage","Un portefeuille froid"],1,"Les mineurs y piochent en priorité les transactions qui paient le plus par octet."],
+["Combien de confirmations considère-t-on traditionnellement comme très sûr ?",["1","3","6","100"],2,"Six blocs empilés au-dessus rendent une annulation extrêmement improbable."],
+["Que s'est-il passé le 22 mai 2010 ?",["Le premier halving","L'achat de deux pizzas pour 10 000 BTC","La création d'Ethereum","Le premier ETF"],1,"C'est le Bitcoin Pizza Day, premier achat connu d'un bien réel en bitcoin."],
+["Sur quoi repose la valeur d'une monnaie fiduciaire comme l'euro ?",["Sur l'or stocké en banque","Sur la confiance et le cours légal fixé par l'État","Sur la puissance de calcul","Sur le pétrole"],1,"Depuis la fin de l'étalon-or, sa valeur tient à la confiance dans l'émetteur et à son statut légal."],
+["Quelles sont les trois fonctions classiques de la monnaie ?",["Épargne, crédit, impôt","Moyen d'échange, unité de compte, réserve de valeur","Création, destruction, transfert","Achat, vente, location"],1,"Le débat sur Bitcoin porte surtout sur son rôle de réserve de valeur."],
+["Sur quel argument repose l'idée de Bitcoin « or numérique » ?",["Il est jaune","Sa rareté est programmée et vérifiable","Il est garanti par les banques","Il est stable"],1,"Comme l'or, il est rare et coûteux à produire, mais son offre est connue à l'avance."],
+["Qu'est-ce qu'une CBDC ?",["Une crypto décentralisée","Une monnaie numérique émise par une banque centrale","Un stablecoin privé","Un ETF"],1,"L'euro numérique en est un exemple : numérique, mais centralisé et contrôlé par l'émetteur."],
+["Quel pays a fait du bitcoin une monnaie légale en 2021 ?",["La Suisse","Le Salvador","Le Japon","Le Canada"],1,"Le Salvador, en septembre 2021. Le statut a ensuite été assoupli en 2025 dans le cadre d'un accord avec le FMI."],
+["Quand les ETF bitcoin au comptant ont-ils été autorisés aux États-Unis ?",["Janvier 2024","Décembre 2017","Mars 2021","Ils ne l'ont jamais été"],0,"La SEC les a approuvés le 10 janvier 2024, ouvrant l'accès aux investisseurs institutionnels."],
+["Qu'apporte le Lightning Network ?",["Plus de bitcoins","Des paiements rapides et peu chers via des canaux hors chaîne","Un nouveau consensus","L'anonymat complet"],1,"Deux parties ouvrent un canal sur la chaîne, échangent autant qu'elles veulent hors chaîne, puis règlent le solde."],
+["Bitcoin est-il anonyme ?",["Oui, totalement","Non, il est pseudonyme : toutes les transactions sont publiques et traçables","Seulement le week-end","Uniquement avec un exchange"],1,"Les adresses ne portent pas de nom, mais l'analyse de chaîne peut relier une adresse à une identité."],
+["Quelle est la différence entre un soft fork et un hard fork ?",["Le soft fork reste compatible avec les anciens nœuds, le hard fork non","Le hard fork est plus rapide","Le soft fork crée une nouvelle crypto","Aucune"],0,"SegWit et Taproot étaient des soft forks. Bitcoin Cash est né d'un hard fork en 2017."],
+["De quoi se compose la rémunération d'un mineur ?",["Uniquement des frais","De la subvention de bloc et des frais des transactions incluses","D'un salaire de la fondation","Des intérêts bancaires"],1,"À mesure que la subvention diminue, les frais devront prendre le relais pour financer la sécurité."]
+]},
+{id:"s3",title:"Blockchains programmables : Cardano et Ethereum",src:"Q&R n°3 · John Greene, Cardano Foundation",qs:[
+["Qui a principalement conçu Ethereum, lancé en 2015 ?",["Satoshi Nakamoto","Vitalik Buterin","Charles Hoskinson seul","Changpeng Zhao"],1,"Vitalik Buterin l'a décrit en 2013, avec plusieurs cofondateurs dont Charles Hoskinson."],
+["Qu'exécute l'EVM ?",["Le minage de bitcoins","Les contrats intelligents d'Ethereum","Les paiements Lightning","Les mises à jour de portefeuille"],1,"L'Ethereum Virtual Machine exécute le code des contrats de façon identique sur tous les nœuds."],
+["À quoi correspond le gas sur Ethereum ?",["Au prix de l'ETH","À la quantité de calcul nécessaire, payée en frais","À la vitesse du réseau","Au nombre de validateurs"],1,"Chaque opération coûte du gas : plus un contrat calcule, plus la transaction coûte."],
+["Qui a fondé Cardano ?",["Vitalik Buterin","Charles Hoskinson, cofondateur d'Ethereum","Gavin Wood","Satoshi Nakamoto"],1,"Charles Hoskinson a quitté Ethereum et lancé Cardano, via IOHK (aujourd'hui Input Output)."],
+["Quel protocole de consensus utilise Cardano ?",["Proof of Work","Ouroboros, une preuve d'enjeu","Proof of Authority","Tendermint"],1,"Ouroboros est une famille de protocoles de preuve d'enjeu publiés avec preuves de sécurité."],
+["Quel modèle comptable utilise Cardano ?",["Le modèle à comptes","L'eUTXO, des UTXO étendus","Un registre bancaire","Le modèle DAG"],1,"Cardano étend le modèle de Bitcoin pour y attacher du code et des données."],
+["Quel avantage pratique offre le modèle eUTXO ?",["Des frais nuls","Des frais et un résultat connus avant d'envoyer la transaction","Des blocs plus gros","Pas besoin de portefeuille"],1,"Une transaction peut être validée localement : elle réussit ou échoue sans payer de frais pour un échec imprévu."],
+["Sur quel langage repose Plutus, le langage des contrats de Cardano ?",["Solidity","Haskell","Python","Rust"],1,"Haskell est un langage fonctionnel qui se prête à la vérification formelle."],
+["Qu'est-ce qui distingue la démarche de développement de Cardano ?",["Le développement le plus rapide possible","L'appui sur la recherche académique évaluée par des pairs","L'absence de documentation","Un code fermé"],1,"Les protocoles sont publiés et relus avant d'être implémentés, au prix d'un rythme plus lent."],
+["Que se passe-t-il quand on délègue ses ADA à un pool ?",["Les ADA quittent votre portefeuille pendant un an","Les ADA restent dans votre portefeuille et restent disponibles","Les ADA sont brûlés","Le pool devient propriétaire"],1,"Le staking sur Cardano est liquide : pas de verrouillage, vous gardez la garde de vos jetons."],
+["Quand Ethereum est-il passé à la preuve d'enjeu ?",["The Merge, septembre 2022","Juillet 2015","Janvier 2020","Il est toujours en preuve de travail"],0,"The Merge a réduit la consommation électrique du réseau de plus de 99 %."],
+["Quel est le rôle de la Cardano Foundation ?",["Miner les blocs","Une entité suisse indépendante qui promeut l'adoption et soutient la gouvernance de Cardano","Fixer le prix de l'ADA","Émettre des ADA"],1,"Basée à Zoug, elle travaille sur l'adoption par les entreprises, l'éducation et la gouvernance."],
+["Comment s'appelle l'ère de gouvernance décentralisée de Cardano ?",["Byron","Shelley","Voltaire","Goguen"],2,"Voltaire, avec la CIP-1694, a introduit le vote on-chain et les représentants délégués (DReps)."],
+["Quelle particularité ont les jetons natifs sur Cardano ?",["Ils nécessitent un contrat intelligent comme les ERC-20","Ils sont gérés directement par le registre, sans contrat intelligent","Ils sont interdits","Ils ne peuvent pas être échangés"],1,"Sur Ethereum, un jeton ERC-20 est un contrat. Sur Cardano, le registre gère les jetons nativement, comme l'ADA."],
+["Que désigne la DeFi ?",["Les services financiers des banques en ligne","Des services financiers (prêt, échange, épargne) fonctionnant par contrats intelligents sans intermédiaire","La défiscalisation","Un indice boursier"],1,"Uniswap, Aave ou sur Cardano Minswap et Liqwid en sont des exemples."],
+["Qu'est-ce qu'une DAO ?",["Une banque décentralisée","Une organisation dont les règles et les votes sont gérés par contrats intelligents","Un type de NFT","Un exchange centralisé"],1,"Les détenteurs de jetons de gouvernance votent les décisions, appliquées par le code."],
+["Quel est le principal risque d'un contrat intelligent ?",["Il est trop lent","Une faille dans le code peut être exploitée et les fonds volés","Il coûte trop cher à lire","Il disparaît après un an"],1,"Le piratage de The DAO en 2016 a conduit au hard fork d'Ethereum et à la naissance d'Ethereum Classic."],
+["Que signifie la composabilité en DeFi ?",["Les protocoles peuvent s'assembler comme des briques","Les jetons peuvent être fusionnés","Les blocs sont compressés","Le code peut être réécrit"],0,"On parle de « legos monétaires » : un protocole en utilise un autre directement."],
+["Pourquoi les ponts entre blockchains (bridges) sont-ils souvent visés par les pirates ?",["Ils sont lents","Ils concentrent de gros montants verrouillés et une logique complexe","Ils n'ont pas de code","Ils sont gérés par l'État"],1,"Ronin (environ 600 M$) et Wormhole (environ 320 M$) comptent parmi les plus gros vols de l'histoire."],
+["Comment s'appelle la plus petite unité de l'ADA ?",["Le satoshi","Le lovelace","Le wei","Le gwei"],1,"1 ADA = 1 000 000 lovelace, en hommage à Ada Lovelace."]
+]},
+{id:"s4",title:"Sécurité et confidentialité des portefeuilles",src:"Q&R n°4 · Lucien, Trezor",qs:[
+["Que signifie « not your keys, not your coins » ?",["Les clés USB sont dangereuses","Si vous ne détenez pas les clés privées, vous ne contrôlez pas vraiment vos cryptos","Il faut changer de clé chaque mois","Les exchanges sont toujours sûrs"],1,"Sur une plateforme, vous détenez une créance. FTX, Celsius ou AscendEX ont montré ce que cela peut coûter."],
+["Qu'est-ce que la garde personnelle (self-custody) ?",["Confier ses cryptos à un exchange","Détenir soi-même ses clés privées","Assurer ses cryptos","Les stocker chez un notaire"],1,"Vous êtes seul responsable, sans intermédiaire qui puisse bloquer ou perdre vos fonds."],
+["Que représente la phrase de récupération de 12 ou 24 mots ?",["Un mot de passe de connexion à l'appli","Le portefeuille lui-même : quiconque la possède contrôle les fonds","Un code de support","Une adresse de réception"],1,"Toutes les clés privées en dérivent. Perdre l'appareil n'est rien si on a la phrase ; perdre la phrase, si."],
+["Où conserver sa phrase de récupération ?",["En photo sur son téléphone","Dans un e-mail à soi-même","Sur un support physique hors ligne, papier ou métal","Dans un gestionnaire de notes cloud"],2,"Jamais sur un appareil connecté. Le métal résiste au feu et à l'eau."],
+["Un « support technique » vous demande votre phrase de récupération. Que faire ?",["La donner pour débloquer le compte","Refuser : aucun service légitime ne la demande jamais","N'en donner que les 12 premiers mots","La dicter par téléphone"],1,"C'est l'arnaque la plus répandue. Même une partie de la phrase réduit fortement la sécurité."],
+["À quoi sert une passphrase (le « 25e mot ») ?",["À accélérer les transactions","À ouvrir un portefeuille caché : la phrase seule ne suffit plus à vider les fonds","À remplacer le code PIN","À réduire les frais"],1,"Chaque passphrase dérive un portefeuille différent. Un voleur qui trouve les 24 mots ne voit que le portefeuille sans passphrase."],
+["Que se passe-t-il si vous oubliez votre passphrase ?",["Trezor peut la réinitialiser","Les fonds de ce portefeuille sont définitivement perdus","On la retrouve dans l'appli","Rien, la phrase de 24 mots suffit"],1,"La passphrase n'est stockée nulle part. Elle se sauvegarde séparément de la phrase, sur un autre support."],
+["Comment fonctionne une sauvegarde Shamir (SLIP-39) ?",["La phrase est copiée trois fois","Le secret est découpé en parts ; il en faut un nombre minimal (par exemple 2 sur 3) pour le reconstituer","On utilise trois portefeuilles différents","Les mots sont chiffrés par Trezor"],1,"Une part seule ne révèle rien, et perdre une part n'est pas grave si le seuil reste atteignable."],
+["Quelle est la différence entre Shamir et multisig ?",["Aucune","Shamir découpe la sauvegarde d'une seule clé ; le multisig exige plusieurs clés distinctes qui signent chacune","Le multisig est réservé à Ethereum","Shamir est plus ancien"],1,"Avec Shamir, la clé est reconstituée à un moment. Avec le multisig, elle n'existe jamais en un seul endroit."],
+["Quel est l'intérêt d'un multisig 2 sur 3 ?",["Doubler ses bitcoins","Perdre ou se faire voler une clé sans perdre les fonds","Envoyer sur trois blockchains","Payer moins de frais"],1,"Il supprime le point de défaillance unique : un attaquant doit compromettre deux clés."],
+["Votre nouveau portefeuille arrive avec une phrase déjà imprimée dans la boîte. Que conclure ?",["C'est pratique","C'est normal sur les nouveaux modèles","C'est une attaque de la chaîne d'approvisionnement : ne pas l'utiliser","Il suffit de changer le PIN"],2,"La phrase doit toujours être générée par l'appareil, devant vous. Une phrase fournie est connue de quelqu'un d'autre."],
+["Où acheter un portefeuille matériel ?",["Sur une place de marché d'occasion, c'est moins cher","Directement chez le fabricant ou un revendeur officiel","Auprès d'un vendeur sur Telegram","Peu importe"],1,"Un appareil d'occasion ou de source douteuse peut avoir été modifié."],
+["Pourquoi vérifier l'adresse de réception sur l'écran du portefeuille matériel ?",["Pour le design","Parce qu'un logiciel malveillant peut remplacer l'adresse affichée ou copiée sur l'ordinateur","Pour économiser des frais","Ce n'est pas utile"],1,"L'écran de l'appareil est la seule source de confiance. Certains malwares remplacent l'adresse dans le presse-papiers."],
+["Qu'est-ce que l'empoisonnement d'adresse (address poisoning) ?",["Un virus dans la blockchain","L'envoi d'une petite transaction depuis une adresse qui ressemble à la vôtre pour qu'on la recopie par erreur","Un bug de Trezor","Une attaque à 51 %"],1,"L'attaquant mise sur la copie depuis l'historique. Vérifiez toujours l'adresse entière, pas seulement le début et la fin."],
+["Que fait un « drainer » quand vous signez une approbation illimitée ?",["Il accélère vos transactions","Il peut ensuite retirer vos jetons sans nouvelle autorisation","Il bloque votre compte","Il vous rembourse"],1,"Lisez ce que vous signez et révoquez régulièrement les approbations inutiles."],
+["Pourquoi un portefeuille matériel protège-t-il mieux qu'une appli ?",["Il est plus cher","Les clés privées ne quittent jamais l'appareil : il signe en interne","Il est plus rapide","Il n'a pas besoin de phrase"],1,"Même sur un ordinateur infecté, l'attaquant ne peut pas extraire la clé, seulement tenter de vous faire signer."],
+["Quelle est la différence entre portefeuille chaud et froid ?",["La couleur de l'appareil","Le chaud est connecté à Internet, le froid garde les clés hors ligne","Le froid est pour l'épargne en euros","Il n'y en a pas"],1,"On garde peu de fonds sur un portefeuille chaud, pour l'usage courant, et l'épargne au froid."],
+["Pourquoi faire tourner son propre nœud complet ?",["Pour miner plus","Pour vérifier soi-même les transactions et ne pas révéler ses adresses à un serveur tiers","Pour payer moins d'impôts","C'est obligatoire"],1,"Sans nœud, votre portefeuille interroge le serveur de quelqu'un d'autre, qui voit vos adresses et votre solde."],
+["Qu'est-ce qui caractérise un Coldcard ?",["Il est multi-cryptos","Il est dédié à Bitcoin et peut fonctionner sans connexion directe (air-gapped), via carte microSD","Il se connecte en Wi-Fi","Il n'a pas d'écran"],1,"Les transactions partiellement signées (PSBT) transitent par carte mémoire, sans câble vers l'ordinateur."],
+["Quelle règle de base limite la casse en cas d'erreur ?",["Tout garder sur un seul exchange","Tester d'abord une petite transaction avant un gros envoi","Partager sa phrase avec un proche par SMS","Ne jamais mettre à jour son appareil"],1,"Un petit envoi de test confirme l'adresse et le réseau avant de déplacer une somme importante."]
+]}
+];
+
+const KEY="chaine-quiz-v1";
+let prog={};
+try{prog=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){prog={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(prog))}catch(e){}}
+const app=document.getElementById("app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function fakeHash(id,score){let h=0;const s=id+score;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;let out="";for(let i=0;i<4;i++){h=(h*1103515245+12345)>>>0;out+=h.toString(16).padStart(8,"0").slice(0,4)}return "0000"+out.slice(0,12)}
+const unlocked=i=>i===0||(prog[LEVELS[i-1].id]&&prog[LEVELS[i-1].id].passed);
+let confirmReset=false;
+
+function home(){
+  const done=LEVELS.filter(l=>prog[l.id]&&prog[l.id].passed).length;
+  let h=`<h1>La Chaîne des Quiz</h1>
+  <p class="lede">MOOC Blockchain and Digital Assets · University of Nicosia. Chaque session est un bloc : réussis son quiz pour le miner et débloquer le suivant.</p>
+  <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> (plus de 14) pour passer · ${done}/${LEVELS.length} blocs minés</p>
+  <div class="chain">`;
+  LEVELS.forEach((l,i)=>{
+    const p=prog[l.id], open=unlocked(i), mined=p&&p.passed;
+    if(i>0)h+=`<div class="link ${mined||unlocked(i)?"ok":""}" aria-hidden="true"></div>`;
+    const cls=mined?"mined":open?"open":"locked";
+    let chip=mined?`<span class="chip ok">Miné</span>`:open?(p?`<span class="chip ko">À repasser</span>`:`<span class="chip">Disponible</span>`):`<span class="chip">Verrouillé</span>`;
+    let meta=mined?`hash ${fakeHash(l.id,p.best)} · meilleur score ${p.best}/20`:open?(p?`meilleur score ${p.best}/20 · encore ${PASS-p.best} point${PASS-p.best>1?"s":""} à gagner`:l.src):`Réussis le bloc ${i} pour déverrouiller`;
+    h+=`<div class="block ${cls}"><div class="num">${String(i+1).padStart(2,"0")}</div><div class="info">
+      <h2>${esc(l.title)}</h2><div class="meta">${esc(meta)}</div>
+      <div class="row">${chip}${open?`<button class="${mined?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer":p?"Retenter":"Commencer"}</button>`:""}</div></div></div>`;
+  });
+  h+=`</div><div class="foot"><span>Ta progression est gardée dans ce navigateur.</span>
+  <span class="confirm">${confirmReset?`Tout effacer ? <button class="ghost" id="yes">Oui, effacer</button><button class="ghost" id="no">Annuler</button>`:`<button class="ghost" id="reset">Réinitialiser</button>`}</span></div>`;
+  app.innerHTML=h;
+  app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>start(+b.dataset.go));
+  const r=document.getElementById("reset");if(r)r.onclick=()=>{confirmReset=true;home()};
+  const y=document.getElementById("yes");if(y)y.onclick=()=>{prog={};save();confirmReset=false;home()};
+  const n=document.getElementById("no");if(n)n.onclick=()=>{confirmReset=false;home()};
+}
+
+let S=null;
+function start(i){
+  const l=LEVELS[i];
+  const qs=shuffle(l.qs).slice(0,TOTAL).map(q=>{const order=shuffle([0,1,2,3]);return{q:q[0],o:order.map(k=>q[1][k]),a:order.indexOf(q[2]),e:q[3]}});
+  S={i,qs,n:0,score:0,answered:false,miss:[]};
+  ask();window.scrollTo(0,0);
+}
+function ask(){
+  const l=LEVELS[S.i],q=S.qs[S.n];
+  app.innerHTML=`<div class="top"><button class="ghost" id="quit">← Quitter</button><span class="qnum">Bloc ${S.i+1} · Question ${S.n+1}/${TOTAL} · ${S.score} bonne${S.score>1?"s":""}</span></div>
+  <div class="bar"><i style="width:${S.n/TOTAL*100}%"></i></div>
+  <p class="q">${esc(q.q)}</p>
+  <div class="opts">${q.o.map((t,k)=>`<button class="opt" data-k="${k}"><span class="k">${"ABCD"[k]}</span><span>${esc(t)}</span></button>`).join("")}</div>
+  <div id="fb"></div>`;
+  document.getElementById("quit").onclick=home;
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(+b.dataset.k));
+  app.querySelector(".opt").focus({preventScroll:true});
+}
+function answer(k){
+  const q=S.qs[S.n],ok=k===q.a;
+  if(ok)S.score++;else S.miss.push(q);
+  app.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(j===q.a)b.classList.add("right");else if(j===k)b.classList.add("wrong")});
+  const last=S.n===TOTAL-1;
+  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"ko"}"><strong>${ok?"Bonne réponse":"Mauvaise réponse"}</strong>${esc(q.e)}</div>
+  <div class="next"><button class="btn" id="nx">${last?"Voir mon score":"Question suivante →"}</button></div>`;
+  const nx=document.getElementById("nx");nx.focus();
+  nx.onclick=()=>{if(last)finish();else{S.n++;ask()}};
+}
+function finish(){
+  const l=LEVELS[S.i],pass=S.score>=PASS,p=prog[l.id]||{best:0,passed:false};
+  p.best=Math.max(p.best,S.score);p.passed=p.passed||pass;prog[l.id]=p;save();
+  const nextOpen=pass&&S.i+1<LEVELS.length;
+  let h=`<div class="top"><span class="qnum">Bloc ${S.i+1} · ${esc(l.title)}</span></div>
+  <div style="margin-top:24px" class="score">${S.score}<small>/20</small></div>
+  <p class="verdict">${pass?(nextOpen?`Bloc miné. Le bloc ${S.i+2} est déverrouillé.`:`Bloc miné. Tu as terminé toute la chaîne disponible.`):`Il te manque ${PASS-S.score} point${PASS-S.score>1?"s":""} pour miner ce bloc. Relis les corrections ci-dessous puis retente.`}</p>
+  <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
+  if(S.miss.length){h+=`<div class="review"><h2 style="font-family:var(--display);font-weight:500;font-size:1rem;margin:12px 0 0">À revoir (${S.miss.length})</h2>`+S.miss.map(q=>`<div><p>${esc(q.q)}</p><p class="a">${esc(q.o[q.a])}</p><p class="meta" style="font-family:var(--body);font-size:.9rem">${esc(q.e)}</p></div>`).join("")+`</div>`}
+  app.innerHTML=h;window.scrollTo(0,0);
+  const n=document.getElementById("nxt");if(n)n.onclick=()=>start(S.i+1);
+  document.getElementById("again").onclick=()=>start(S.i);
+  document.getElementById("map").onclick=home;
+}
+home();
+if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
