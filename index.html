@@ -192,7 +192,7 @@ let confirmReset=false;
 function home(){
   const done=LEVELS.filter(l=>prog[l.id]&&prog[l.id].passed).length;
   let h=`<h1>La Chaîne des Quiz</h1>
-  <p class="lede">MOOC Blockchain and Digital Assets · University of Nicosia. Chaque session est un bloc : réussis son quiz pour le miner et débloquer le suivant.</p>
+  <p class="lede"Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique !</p>
   <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> (plus de 14) pour passer · ${done}/${LEVELS.length} blocs minés</p>
   <div class="chain">`;
   LEVELS.forEach((l,i)=>{
