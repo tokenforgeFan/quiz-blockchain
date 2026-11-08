@@ -76,6 +76,22 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .review{display:flex;flex-direction:column;gap:12px;margin-top:22px}
 .review div{border-left:3px solid var(--bad);padding:4px 0 4px 12px}
 .review p{margin:0} .review .a{color:var(--good);font-weight:700}
+.course{margin-top:30px;display:flex;flex-direction:column;gap:16px}
+.course>h2{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0}
+.course>p{margin:0;color:var(--muted)}
+.lesson{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.lesson h3{font-family:var(--display);font-weight:500;font-size:1.05rem;margin:0;line-height:1.3}
+.lesson .cnt{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bad)}
+.lesson p{margin:0;max-width:65ch}
+.lesson .ex{border-left:3px solid var(--accent);padding-left:12px}
+.lesson .ex b,.lesson .key b{font-family:var(--mono);font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;display:block;color:var(--muted);margin-bottom:2px}
+.lesson .key{background:var(--good-bg);border-radius:8px;padding:10px 12px}
+.lesson details{border-top:1px solid var(--line);padding-top:10px}
+.lesson summary{cursor:pointer;font-weight:700;color:var(--muted)}
+.lesson .qa{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.lesson .qa div{font-size:.95rem}
+.lesson .qa .a{color:var(--good);font-weight:700}
+.lesson .qa .you{color:var(--bad)}
 .foot{margin-top:36px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
@@ -179,6 +195,44 @@ const LEVELS=[
 ]}
 ];
 
+// Mini-cours : chaque notion couvre une liste de questions (indices dans le tableau qs du niveau).
+const COURSE={
+s1:[
+{t:"Registre distribué et nœuds",q:[0,4,5,11],b:"Une blockchain est un registre que des milliers d'ordinateurs, les nœuds, conservent en copie. Chaque nœud vérifie lui-même les règles et rejette ce qui est invalide. C'est ce qui règle le problème de la double dépense sans banque : tout le monde voit la même liste de transactions dans le même ordre. Une blockchain publique est ouverte à tous ; une blockchain permissionnée réserve la validation à des participants choisis.",e:"Tu envoies 1 BTC à Paul puis, une seconde après, le même BTC à Marie. Les nœuds n'accepteront qu'une seule des deux transactions dans un bloc ; l'autre sera rejetée comme double dépense.",k:"Pas de chef : la vérité, c'est ce que la majorité des nœuds honnêtes accepte selon les mêmes règles."},
+{t:"Hachage et chaînage des blocs",q:[1,2,3,13],b:"Une fonction de hachage (SHA-256 pour Bitcoin) transforme n'importe quelle donnée en une empreinte de taille fixe. Changer un seul caractère donne une empreinte totalement différente : c'est l'effet avalanche. Chaque bloc contient l'empreinte du précédent, donc toucher un vieux bloc casse tous les suivants. Réécrire l'historique demanderait de refaire tout ce travail plus vite que le reste du réseau : l'immuabilité est une question de coût, pas une impossibilité absolue.",e:"SHA-256(\"bonjour\") et SHA-256(\"Bonjour\") n'ont aucun caractère en commun dans le même ordre, alors qu'une seule majuscule change.",k:"Hash du bloc précédent dans chaque bloc = une chaîne où toute falsification se voit."},
+{t:"Clés et signatures",q:[6,7],b:"Ton portefeuille repose sur une paire de clés. La clé privée, secrète, sert à signer ; la clé publique, dont dérive ton adresse, permet à chacun de vérifier la signature. Une signature valide prouve deux choses : que le détenteur de la clé privée a autorisé la transaction et que celle-ci n'a pas été modifiée. Elle ne dit rien de ton identité civile.",e:"Comme un cachet de cire unique : tout le monde peut reconnaître ton cachet sur l'enveloppe, mais toi seul possèdes le tampon.",k:"Clé privée = signer. Clé publique = vérifier. Qui a la clé privée a les fonds."},
+{t:"Consensus : preuve de travail et preuve d'enjeu",q:[9,10,12],b:"Le consensus décide qui ajoute le prochain bloc. En preuve de travail (Bitcoin depuis le bloc genèse du 3 janvier 2009), les mineurs essaient des milliards de valeurs jusqu'à trouver un hash sous une cible : tricher coûte de l'électricité. En preuve d'enjeu (Ethereum depuis 2022, Cardano), les validateurs bloquent des jetons qu'ils peuvent perdre s'ils trichent : la sécurité vient du capital engagé.",e:"Miner, c'est comme lancer des dés jusqu'à faire un score très bas. Valider en PoS, c'est déposer une caution qu'on perd si on triche.",k:"PoW = sécurité par l'énergie. PoS = sécurité par l'argent mis en jeu."},
+{t:"Contrats intelligents et oracles",q:[14,15],b:"Un contrat intelligent est un programme déployé sur la blockchain qui s'exécute tout seul quand ses conditions sont remplies, sans intermédiaire. Mais une blockchain ne voit pas le monde extérieur : pour connaître un prix ou un résultat, elle a besoin d'un oracle, un service qui y injecte ces données. L'oracle devient alors un point de confiance à surveiller.",e:"Une assurance retard de vol : l'oracle transmet l'heure réelle d'arrivée, et le contrat te rembourse automatiquement si le retard dépasse 3 heures.",k:"Le contrat exécute ; l'oracle informe. Un mauvais oracle donne un mauvais résultat."},
+{t:"Jetons : Web3, NFT et stablecoins",q:[8,16,17],b:"Le Web1 permettait de lire, le Web2 de lire et publier, le Web3 ajoute la propriété : tu détiens tes actifs via tes clés. Les jetons prennent plusieurs formes. Un NFT est non fongible : chaque jeton est unique. Un stablecoin suit la valeur d'un actif de référence, souvent le dollar, et sa stabilité dépend des réserves ou du mécanisme qui le soutient.",e:"1 USDC s'échange contre n'importe quel autre USDC (fongible). Un billet de concert numéroté en NFT ne vaut pas forcément le billet voisin.",k:"Fongible = interchangeable. Stablecoin = arrimé à un actif, donc dépendant de ses réserves."},
+{t:"Passer à l'échelle",q:[18,19],b:"Le trilemme dit qu'il est difficile d'avoir à la fois décentralisation, sécurité et scalabilité. Augmenter la taille des blocs rend les nœuds plus coûteux, donc moins nombreux. Les couches 2 contournent le problème : elles traitent les transactions hors de la chaîne principale et n'y règlent que le résultat, en profitant de sa sécurité.",e:"Lightning pour Bitcoin, ou les rollups comme Arbitrum et Base pour Ethereum, regroupent des milliers d'opérations en un seul règlement sur la couche 1.",k:"Couche 1 = sécurité et règlement. Couche 2 = débit et faibles frais."}
+],
+s2:[
+{t:"La politique monétaire de Bitcoin",q:[0,1,2,5,19],b:"L'offre totale est plafonnée à 21 millions de BTC. Les nouveaux bitcoins sont créés comme subvention de bloc versée aux mineurs, et cette subvention est divisée par deux tous les 210 000 blocs, environ tous les quatre ans : c'est le halving. Depuis avril 2024 elle est de 3,125 BTC. Le mineur touche en plus les frais des transactions incluses, qui devront à terme financer seuls la sécurité. La plus petite unité est le satoshi, un cent-millionième de BTC.",e:"50 → 25 → 12,5 → 6,25 → 3,125 BTC par bloc. Le prochain halving, attendu vers 2028, la fera passer à 1,5625 BTC.",k:"21 millions, halving tous les 210 000 blocs, 1 BTC = 100 000 000 satoshis."},
+{t:"Blocs, difficulté et confirmations",q:[3,4,8],b:"Bitcoin vise un bloc toutes les 10 minutes en moyenne. Tous les 2016 blocs, environ deux semaines, la difficulté s'ajuste : elle monte si les blocs sont venus trop vite, baisse s'ils ont été trop lents. Chaque bloc ajouté au-dessus de ta transaction est une confirmation ; plus il y en a, plus l'annuler est improbable. Six confirmations, environ une heure, est la référence historique pour un gros montant.",e:"Si la puissance de minage double, les blocs arrivent toutes les 5 minutes pendant un temps, puis la difficulté double et on revient à 10 minutes.",k:"10 min par bloc, ajustement tous les 2016 blocs, 6 confirmations pour être tranquille."},
+{t:"Frais et mempool",q:[6,7],b:"Les transactions en attente patientent dans le mempool. La place dans un bloc est limitée, alors les mineurs choisissent celles qui paient le plus par unité de taille (sat/vB). Les frais dépendent donc du poids de la transaction en données et de l'encombrement du moment, pas du montant envoyé.",e:"Envoyer 0,001 BTC ou 10 BTC peut coûter les mêmes frais. En revanche, une transaction qui rassemble 50 petites entrées pèse lourd et coûte cher.",k:"On paie la place dans le bloc, pas la somme. Mempool chargé = frais plus élevés."},
+{t:"Qu'est-ce que la monnaie ?",q:[10,11,12],b:"Une monnaie remplit trois fonctions : moyen d'échange, unité de compte et réserve de valeur. L'euro est une monnaie fiduciaire : sa valeur repose sur la confiance dans l'émetteur et sur son cours légal, pas sur de l'or. Le récit de Bitcoin « or numérique » s'appuie sur sa rareté programmée et vérifiable par tous, ce qui en fait surtout un candidat à la réserve de valeur.",e:"Depuis 1971, le dollar n'est plus convertible en or. Personne ne peut en revanche créer plus de 21 millions de BTC, et chacun peut le vérifier avec son nœud.",k:"Monnaie = échange, compte, réserve. Bitcoin se joue surtout sur la réserve de valeur."},
+{t:"Adoption : histoire, États et finance",q:[9,13,14,15],b:"Le 22 mai 2010, 10 000 BTC achètent deux pizzas : premier achat connu en bitcoin. En 2021 le Salvador en fait une monnaie légale, statut assoupli en 2025 avec le FMI. En janvier 2024, les ETF bitcoin au comptant sont autorisés aux États-Unis, ouvrant la porte aux institutions. À l'opposé, les CBDC comme l'euro numérique sont des monnaies numériques émises et contrôlées par une banque centrale.",e:"Un ETF bitcoin s'achète sur un compte-titres comme une action, sans gérer de clé privée, mais sans en avoir la garde.",k:"CBDC = numérique mais centralisé. ETF = exposition au BTC sans détenir les clés."},
+{t:"Lightning et confidentialité",q:[16,17],b:"Le Lightning Network permet des paiements rapides et quasi gratuits : deux parties ouvrent un canal sur la chaîne, échangent hors chaîne autant qu'elles veulent, puis règlent le solde. Côté vie privée, Bitcoin est pseudonyme et non anonyme : toutes les transactions sont publiques et l'analyse de chaîne peut relier une adresse à une personne, notamment via les plateformes avec KYC.",e:"Retirer d'un exchange vérifié vers ton adresse relie cette adresse à ton identité. Tout ce qui en sort ensuite devient traçable.",k:"Lightning = vitesse. Bitcoin = pseudonyme, jamais anonyme par défaut."},
+{t:"Évolution du protocole : les forks",q:[18],b:"Un soft fork resserre les règles en restant compatible : les anciens nœuds continuent d'accepter les nouveaux blocs. Un hard fork change les règles de façon incompatible : si une partie du réseau refuse, la chaîne se scinde en deux.",e:"SegWit (2017) et Taproot (2021) sont des soft forks. Bitcoin Cash est né d'un hard fork en août 2017.",k:"Soft = compatible. Hard = incompatible, risque de scission."}
+],
+s3:[
+{t:"Ethereum : EVM et gas",q:[0,1,2,10],b:"Ethereum, conçu par Vitalik Buterin et lancé en 2015, est un ordinateur mondial. L'EVM exécute le code des contrats de façon identique sur tous les nœuds. Chaque opération consomme du gas, payé en ETH : plus le contrat calcule, plus la transaction coûte, ce qui empêche les boucles infinies. Depuis The Merge, en septembre 2022, Ethereum fonctionne en preuve d'enjeu, avec une consommation électrique réduite de plus de 99 %.",e:"Un simple envoi d'ETH coûte 21 000 gas. Un échange sur Uniswap en coûte plusieurs fois plus, car le contrat fait bien plus de calculs.",k:"EVM = la machine. Gas = le carburant payé pour chaque calcul."},
+{t:"Cardano : origines et méthode",q:[3,7,8,11,19],b:"Cardano a été fondé par Charles Hoskinson, cofondateur d'Ethereum. Sa particularité est son appui sur la recherche académique : les protocoles sont publiés et relus par des pairs avant d'être codés, au prix d'un rythme plus lent. Les contrats s'écrivent en Plutus, basé sur Haskell, un langage fonctionnel adapté à la vérification formelle. La Cardano Foundation, basée à Zoug, travaille sur l'adoption et la gouvernance. La plus petite unité est le lovelace.",e:"1 ADA = 1 000 000 lovelace, en hommage à Ada Lovelace, pionnière de la programmation.",k:"Cardano = recherche d'abord, code ensuite. Haskell/Plutus pour la sûreté."},
+{t:"Modèle à comptes contre UTXO et eUTXO",q:[5,6,13],b:"Ethereum tient des comptes avec un solde, comme une banque. Bitcoin utilise des UTXO : des « pièces » qu'on dépense entièrement en récupérant la monnaie. Cardano étend ce modèle (eUTXO) pour y attacher du code et des données. Avantage pratique : on sait avant d'envoyer si la transaction réussira et combien elle coûtera. Sur Cardano, les jetons sont natifs, gérés par le registre sans contrat intelligent, alors que sur Ethereum un jeton ERC-20 est un contrat.",e:"Tu as une pièce de 5 € pour payer 3 € : tu la donnes entière et reçois 2 € de monnaie. C'est exactement ce que fait une transaction UTXO.",k:"Comptes = soldes (Ethereum). UTXO/eUTXO = pièces (Bitcoin, Cardano), résultats prévisibles."},
+{t:"Preuve d'enjeu et délégation",q:[4,9],b:"Cardano utilise Ouroboros, une famille de protocoles de preuve d'enjeu publiés avec des preuves de sécurité. Les détenteurs d'ADA délèguent à un pool de staking sans rien bloquer : les ADA restent dans ton portefeuille, sous ta garde, et tu peux les dépenser à tout moment.",e:"Tu délègues 1 000 ADA à un pool : tu reçois des récompenses à chaque époque (5 jours) et tes 1 000 ADA ne quittent jamais ton portefeuille.",k:"Staking sur Cardano = liquide et sans perte de garde."},
+{t:"Gouvernance on-chain",q:[12,15],b:"Une DAO est une organisation dont les règles et les votes passent par des contrats intelligents : les détenteurs de jetons votent, le code applique. Cardano a fait de la gouvernance un pilier avec l'ère Voltaire et la CIP-1694, qui introduit le vote on-chain et les représentants délégués (DReps).",e:"Sans voter toi-même chaque proposition, tu peux confier ton pouvoir de vote à un DRep dont tu partages les idées.",k:"DAO = votes exécutés par le code. Voltaire = gouvernance décentralisée de Cardano."},
+{t:"DeFi et ses risques",q:[14,16,17,18],b:"La DeFi reproduit des services financiers (prêts, échanges, épargne) avec des contrats intelligents, sans intermédiaire. Les protocoles s'assemblent comme des briques : c'est la composabilité. Revers de la médaille : une faille dans le code peut être exploitée et les fonds volés, comme lors du piratage de The DAO en 2016. Les ponts entre blockchains concentrent d'énormes montants et une logique complexe, d'où des vols record comme Ronin (environ 600 M$) ou Wormhole (environ 320 M$).",e:"Tu déposes des USDC sur Aave et utilises ton reçu de dépôt comme garantie ailleurs : pratique, mais une faille dans l'un des deux protocoles touche toute la chaîne.",k:"Composabilité = puissance et risques empilés. Audit et prudence avec les ponts."}
+],
+s4:[
+{t:"La garde personnelle",q:[0,1,16],b:"« Not your keys, not your coins » : sur une plateforme, tu ne détiens qu'une créance, et si la plateforme fait faillite ou bloque les retraits, tes fonds sont pris avec elle. La garde personnelle consiste à détenir toi-même tes clés. On sépare usage et épargne : un portefeuille chaud, connecté, pour de petits montants courants, et un portefeuille froid, hors ligne, pour l'épargne.",e:"FTX en 2022 ou AscendEX en 2026 : les clients avaient des soldes affichés, mais pas les clés.",k:"Pas tes clés, pas tes cryptos. Peu sur le chaud, l'épargne au froid."},
+{t:"La phrase de récupération",q:[2,3,4],b:"Les 12 ou 24 mots sont ton portefeuille : toutes tes clés en dérivent. Perdre l'appareil n'est pas grave si tu as la phrase ; quelqu'un qui obtient la phrase a tout. Elle se garde hors ligne, sur papier ou sur métal, jamais en photo, en e-mail ou dans le cloud. Aucun support légitime ne la demandera jamais, ni en entier ni en partie.",e:"Un faux « support Ledger » t'écrit pour « resynchroniser » ton portefeuille et demande tes mots : c'est toujours une arnaque.",k:"Ta phrase ne se tape jamais sur un ordinateur ou un téléphone, et ne se donne à personne."},
+{t:"La passphrase",q:[5,6],b:"La passphrase, ou « 25e mot », s'ajoute à la phrase de récupération pour créer un portefeuille caché. Un voleur qui trouve les 24 mots n'accède qu'au portefeuille sans passphrase, qui peut servir de leurre. Mais elle n'est stockée nulle part : si tu l'oublies, les fonds du portefeuille caché sont perdus pour toujours. Elle se sauvegarde donc séparément de la phrase.",e:"Même phrase de 24 mots + passphrase « Lisbonne2026 » = un portefeuille. Avec « lisbonne2026 » en minuscule = un autre portefeuille, vide.",k:"Passphrase = protection contre le vol de la phrase, mais aucune récupération possible si oubliée."},
+{t:"Shamir et multisig",q:[7,8,9],b:"Shamir (SLIP-39) découpe la sauvegarde d'une clé en parts : il en faut un nombre minimal, par exemple 2 sur 3, pour la reconstituer, et une part seule ne révèle rien. Le multisig va plus loin : plusieurs clés distinctes doivent signer chaque transaction, si bien que la clé complète n'existe jamais en un seul endroit. Les deux suppriment le point de défaillance unique.",e:"Multisig 2 sur 3 : une clé chez toi, une à la banque, une chez un proche. Un cambriolage ou une perte ne suffit ni à voler ni à perdre les fonds.",k:"Shamir = sauvegarde partagée d'une clé. Multisig = plusieurs clés qui signent."},
+{t:"Le matériel et sa provenance",q:[10,11,15,18],b:"Un portefeuille matériel garde les clés privées dans une puce : il signe en interne et la clé ne sort jamais, même sur un ordinateur infecté. Encore faut-il que l'appareil soit sain : on l'achète chez le fabricant ou un revendeur officiel, et la phrase doit toujours être générée par l'appareil devant toi. Certains modèles comme le Coldcard fonctionnent sans câble (air-gapped), via carte microSD.",e:"Une boîte contenant une phrase déjà imprimée ou un appareil déjà initialisé : quelqu'un d'autre connaît la clé. On ne l'utilise pas.",k:"Source officielle, phrase générée par l'appareil, clé qui ne sort jamais."},
+{t:"Arnaques à l'adresse et à la signature",q:[12,13,14,19],b:"Un malware peut remplacer l'adresse copiée sur ton ordinateur : seule l'adresse affichée sur l'écran du portefeuille matériel fait foi. L'empoisonnement d'adresse glisse dans ton historique une adresse qui ressemble à la tienne au début et à la fin. Les « drainers » te font signer une autorisation illimitée qui leur permet ensuite de vider tes jetons. Avant un gros envoi, une petite transaction de test confirme adresse et réseau.",e:"Ton historique montre bc1q7x…9kf2 et une adresse piégée bc1q7x…9kf2 envoyée par l'attaquant : le milieu diffère, d'où l'importance de vérifier l'adresse entière.",k:"Vérifie l'adresse entière sur l'écran de l'appareil, lis ce que tu signes, teste d'abord en petit."},
+{t:"Confidentialité : son propre nœud",q:[17],b:"Sans nœud personnel, ton portefeuille interroge le serveur de quelqu'un d'autre pour connaître ton solde : ce serveur voit toutes tes adresses et peut les relier entre elles. Faire tourner ton propre nœud complet te permet de vérifier toi-même les règles et de ne rien révéler.",e:"Un nœud Bitcoin sur un mini-PC ou un Umbrel à la maison, relié à Sparrow ou à Trezor Suite.",k:"Ton nœud = tu vérifies toi-même et tu gardes tes adresses pour toi."}
+]};
+
 const KEY="chaine-quiz-v1";
 let prog={};
 try{prog=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){prog={}}
@@ -193,7 +247,7 @@ let confirmReset=false;
 function home(){
   const done=LEVELS.filter(l=>prog[l.id]&&prog[l.id].passed).length;
   let h=`<h1>La Chaîne des Quiz</h1>
-  <p class="lede">Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique !</p>
+  <p class="lede">Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique ! Chaque session est un bloc : réussis son quiz pour le miner et débloquer le suivant.</p>
   <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> (plus de 14) pour passer · ${done}/${LEVELS.length} blocs minés</p>
   <p class="rule">Points négatifs : bonne réponse <b>+1</b> · mauvaise réponse <b>−0,5</b> · question passée <b>0</b>. Dans le doute, mieux vaut passer.</p>
   <div class="chain">`;
@@ -219,7 +273,7 @@ function home(){
 let S=null;
 function start(i){
   const l=LEVELS[i];
-  const qs=shuffle(l.qs).slice(0,TOTAL).map(q=>{const order=shuffle([0,1,2,3]);return{q:q[0],o:order.map(k=>q[1][k]),a:order.indexOf(q[2]),e:q[3]}});
+  const qs=shuffle(l.qs.map((q,ix)=>[q,ix])).slice(0,TOTAL).map(([q,ix])=>{const order=shuffle([0,1,2,3]);return{q:q[0],o:order.map(k=>q[1][k]),a:order.indexOf(q[2]),e:q[3],ix}});
   S={i,qs,n:0,score:0,good:0,bad:0,skip:0,miss:[]};
   ask();window.scrollTo(0,0);
 }
@@ -238,7 +292,7 @@ function ask(){
 }
 function answer(k){
   const q=S.qs[S.n],ok=k===q.a,skipped=k<0;
-  if(ok){S.score+=PTS_OK;S.good++}else if(skipped){S.skip++;S.miss.push(q)}else{S.score+=PTS_KO;S.bad++;S.miss.push(q)}
+  if(ok){S.score+=PTS_OK;S.good++}else if(skipped){S.skip++;S.miss.push({...q,you:null})}else{S.score+=PTS_KO;S.bad++;S.miss.push({...q,you:q.o[k]})}
   app.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(j===q.a)b.classList.add("right");else if(j===k)b.classList.add("wrong")});
   document.getElementById("skip").disabled=true;
   const last=S.n===TOTAL-1;
@@ -247,6 +301,20 @@ function answer(k){
   <div class="next"><button class="btn" id="nx">${last?"Voir mon score":"Question suivante →"}</button></div>`;
   const nx=document.getElementById("nx");nx.focus();
   nx.onclick=()=>{if(last)finish();else{S.n++;ask()}};
+}
+function courseHTML(id,miss){
+  if(!miss.length)return `<div class="course"><h2>Mini-cours</h2><p>Aucune erreur ni question passée : rien à revoir sur ce bloc.</p></div>`;
+  const groups=(COURSE[id]||[]).map(n=>({n,items:miss.filter(m=>n.q.includes(m.ix))})).filter(g=>g.items.length).sort((a,b)=>b.items.length-a.items.length);
+  let h=`<div class="course"><h2>Mini-cours sur tes erreurs</h2><p>${groups.length} notion${groups.length>1?"s":""} à revoir, de la plus ratée à la moins ratée. Lis la leçon, puis vérifie tes questions en dessous.</p>`;
+  groups.forEach(g=>{
+    const c=g.items.length;
+    h+=`<section class="lesson"><span class="cnt">${c} question${c>1?"s":""} ratée${c>1?"s":""} ou passée${c>1?"s":""}</span><h3>${esc(g.n.t)}</h3>
+    <p>${esc(g.n.b)}</p>
+    <p class="ex"><b>Exemple concret</b>${esc(g.n.e)}</p>
+    <p class="key"><b>À retenir</b>${esc(g.n.k)}</p>
+    <details><summary>Tes questions sur cette notion (${c})</summary><div class="qa">${g.items.map(m=>`<div><p>${esc(m.q)}</p>${m.you?`<p class="you">Ta réponse : ${esc(m.you)}</p>`:`<p class="you">Question passée</p>`}<p class="a">Bonne réponse : ${esc(m.o[m.a])}</p></div>`).join("")}</div></details></section>`;
+  });
+  return h+`</div>`;
 }
 function finish(){
   const l=LEVELS[S.i],final=Math.max(0,S.score),pass=final>=PASS,p=prog[l.id]||{best:0,passed:false};
@@ -257,8 +325,11 @@ function finish(){
   <p class="qnum" style="margin:10px 0 0">${S.good} bonne${S.good>1?"s":""} (+${S.good}) · ${S.bad} fausse${S.bad>1?"s":""} (−${fmt(S.bad*0.5)}) · ${S.skip} passée${S.skip>1?"s":""}</p>
   <p class="verdict">${pass?(nextOpen?`Bloc miné. Le bloc ${S.i+2} est déverrouillé.`:`Bloc miné. Tu as terminé toute la chaîne disponible.`):`Il te manque ${fmt(gap)} point${gap>1?"s":""} pour miner ce bloc. Relis les corrections ci-dessous puis retente.`}</p>
   <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
-  if(S.miss.length){h+=`<div class="review"><h2 style="font-family:var(--display);font-weight:500;font-size:1rem;margin:12px 0 0">À revoir (${S.miss.length})</h2>`+S.miss.map(q=>`<div><p>${esc(q.q)}</p><p class="a">${esc(q.o[q.a])}</p><p class="meta" style="font-family:var(--body);font-size:.9rem">${esc(q.e)}</p></div>`).join("")+`</div>`}
+  h+=courseHTML(l.id,S.miss);
+  if(S.miss.length)h+=`<div class="row" style="margin-top:20px">${nextOpen?`<button class="btn" id="nxt2">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again2">Retenter ce bloc</button></div>`;
   app.innerHTML=h;window.scrollTo(0,0);
+  const n2=document.getElementById("nxt2");if(n2)n2.onclick=()=>start(S.i+1);
+  const a2=document.getElementById("again2");if(a2)a2.onclick=()=>start(S.i);
   const n=document.getElementById("nxt");if(n)n.onclick=()=>start(S.i+1);
   document.getElementById("again").onclick=()=>start(S.i);
   document.getElementById("map").onclick=home;
