@@ -1,5 +1,5 @@
 // Change VERSION à chaque mise à jour du quiz pour forcer le rafraîchissement.
-const VERSION = "quiz-v1";
+const VERSION = "quiz-v2";
 const FILES = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

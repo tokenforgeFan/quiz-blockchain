@@ -86,7 +86,8 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 <div class="wrap" id="app"></div>
 
 <script>
-const PASS=15, TOTAL=20;
+const PASS=15, TOTAL=20, PTS_OK=1, PTS_KO=-0.5;
+const fmt=n=>String(Math.round(n*2)/2).replace(".",",");
 const LEVELS=[
 {id:"s1",title:"Introduction à la blockchain et au Web3",src:"Session 1 · support PDF et vidéos",qs:[
 ["Qu'est-ce qu'une blockchain, au sens le plus simple ?",["Un registre partagé où l'on ajoute des blocs sans pouvoir réécrire les anciens","Une base de données gérée par une seule banque","Un logiciel de minage","Un type de cryptomonnaie"],0,"C'est un registre distribué, en ajout seul : chaque participant en garde une copie et on n'ajoute que de nouveaux blocs."],
@@ -192,15 +193,16 @@ let confirmReset=false;
 function home(){
   const done=LEVELS.filter(l=>prog[l.id]&&prog[l.id].passed).length;
   let h=`<h1>La Chaîne des Quiz</h1>
-  <p class="lede"Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique !</p>
+  <p class="lede">Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique !</p>
   <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> (plus de 14) pour passer · ${done}/${LEVELS.length} blocs minés</p>
+  <p class="rule">Points négatifs : bonne réponse <b>+1</b> · mauvaise réponse <b>−0,5</b> · question passée <b>0</b>. Dans le doute, mieux vaut passer.</p>
   <div class="chain">`;
   LEVELS.forEach((l,i)=>{
     const p=prog[l.id], open=unlocked(i), mined=p&&p.passed;
     if(i>0)h+=`<div class="link ${mined||unlocked(i)?"ok":""}" aria-hidden="true"></div>`;
     const cls=mined?"mined":open?"open":"locked";
     let chip=mined?`<span class="chip ok">Miné</span>`:open?(p?`<span class="chip ko">À repasser</span>`:`<span class="chip">Disponible</span>`):`<span class="chip">Verrouillé</span>`;
-    let meta=mined?`hash ${fakeHash(l.id,p.best)} · meilleur score ${p.best}/20`:open?(p?`meilleur score ${p.best}/20 · encore ${PASS-p.best} point${PASS-p.best>1?"s":""} à gagner`:l.src):`Réussis le bloc ${i} pour déverrouiller`;
+    let meta=mined?`hash ${fakeHash(l.id,p.best)} · meilleur score ${fmt(p.best)}/20`:open?(p?`meilleur score ${fmt(p.best)}/20 · encore ${fmt(PASS-p.best)} point${PASS-p.best>1?"s":""} à gagner`:l.src):`Réussis le bloc ${i} pour déverrouiller`;
     h+=`<div class="block ${cls}"><div class="num">${String(i+1).padStart(2,"0")}</div><div class="info">
       <h2>${esc(l.title)}</h2><div class="meta">${esc(meta)}</div>
       <div class="row">${chip}${open?`<button class="${mined?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer":p?"Retenter":"Commencer"}</button>`:""}</div></div></div>`;
@@ -218,37 +220,42 @@ let S=null;
 function start(i){
   const l=LEVELS[i];
   const qs=shuffle(l.qs).slice(0,TOTAL).map(q=>{const order=shuffle([0,1,2,3]);return{q:q[0],o:order.map(k=>q[1][k]),a:order.indexOf(q[2]),e:q[3]}});
-  S={i,qs,n:0,score:0,answered:false,miss:[]};
+  S={i,qs,n:0,score:0,good:0,bad:0,skip:0,miss:[]};
   ask();window.scrollTo(0,0);
 }
 function ask(){
   const l=LEVELS[S.i],q=S.qs[S.n];
-  app.innerHTML=`<div class="top"><button class="ghost" id="quit">← Quitter</button><span class="qnum">Bloc ${S.i+1} · Question ${S.n+1}/${TOTAL} · ${S.score} bonne${S.score>1?"s":""}</span></div>
+  app.innerHTML=`<div class="top"><button class="ghost" id="quit">← Quitter</button><span class="qnum">Bloc ${S.i+1} · Question ${S.n+1}/${TOTAL} · ${fmt(S.score)} pt${Math.abs(S.score)>1?"s":""}</span></div>
   <div class="bar"><i style="width:${S.n/TOTAL*100}%"></i></div>
   <p class="q">${esc(q.q)}</p>
   <div class="opts">${q.o.map((t,k)=>`<button class="opt" data-k="${k}"><span class="k">${"ABCD"[k]}</span><span>${esc(t)}</span></button>`).join("")}</div>
+  <div class="next" style="justify-content:flex-start"><button class="ghost" id="skip">Je ne sais pas, passer (0 point)</button></div>
   <div id="fb"></div>`;
   document.getElementById("quit").onclick=home;
+  document.getElementById("skip").onclick=()=>answer(-1);
   app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(+b.dataset.k));
   app.querySelector(".opt").focus({preventScroll:true});
 }
 function answer(k){
-  const q=S.qs[S.n],ok=k===q.a;
-  if(ok)S.score++;else S.miss.push(q);
+  const q=S.qs[S.n],ok=k===q.a,skipped=k<0;
+  if(ok){S.score+=PTS_OK;S.good++}else if(skipped){S.skip++;S.miss.push(q)}else{S.score+=PTS_KO;S.bad++;S.miss.push(q)}
   app.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(j===q.a)b.classList.add("right");else if(j===k)b.classList.add("wrong")});
+  document.getElementById("skip").disabled=true;
   const last=S.n===TOTAL-1;
-  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"ko"}"><strong>${ok?"Bonne réponse":"Mauvaise réponse"}</strong>${esc(q.e)}</div>
+  const head=ok?"Bonne réponse · +1":skipped?"Question passée · 0 point":"Mauvaise réponse · −0,5";
+  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"ko"}"><strong>${head}</strong>${esc(q.e)}</div>
   <div class="next"><button class="btn" id="nx">${last?"Voir mon score":"Question suivante →"}</button></div>`;
   const nx=document.getElementById("nx");nx.focus();
   nx.onclick=()=>{if(last)finish();else{S.n++;ask()}};
 }
 function finish(){
-  const l=LEVELS[S.i],pass=S.score>=PASS,p=prog[l.id]||{best:0,passed:false};
-  p.best=Math.max(p.best,S.score);p.passed=p.passed||pass;prog[l.id]=p;save();
-  const nextOpen=pass&&S.i+1<LEVELS.length;
+  const l=LEVELS[S.i],final=Math.max(0,S.score),pass=final>=PASS,p=prog[l.id]||{best:0,passed:false};
+  p.best=Math.max(p.best,final);p.passed=p.passed||pass;prog[l.id]=p;save();
+  const nextOpen=pass&&S.i+1<LEVELS.length,gap=PASS-final;
   let h=`<div class="top"><span class="qnum">Bloc ${S.i+1} · ${esc(l.title)}</span></div>
-  <div style="margin-top:24px" class="score">${S.score}<small>/20</small></div>
-  <p class="verdict">${pass?(nextOpen?`Bloc miné. Le bloc ${S.i+2} est déverrouillé.`:`Bloc miné. Tu as terminé toute la chaîne disponible.`):`Il te manque ${PASS-S.score} point${PASS-S.score>1?"s":""} pour miner ce bloc. Relis les corrections ci-dessous puis retente.`}</p>
+  <div style="margin-top:24px" class="score">${fmt(final)}<small>/20</small></div>
+  <p class="qnum" style="margin:10px 0 0">${S.good} bonne${S.good>1?"s":""} (+${S.good}) · ${S.bad} fausse${S.bad>1?"s":""} (−${fmt(S.bad*0.5)}) · ${S.skip} passée${S.skip>1?"s":""}</p>
+  <p class="verdict">${pass?(nextOpen?`Bloc miné. Le bloc ${S.i+2} est déverrouillé.`:`Bloc miné. Tu as terminé toute la chaîne disponible.`):`Il te manque ${fmt(gap)} point${gap>1?"s":""} pour miner ce bloc. Relis les corrections ci-dessous puis retente.`}</p>
   <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
   if(S.miss.length){h+=`<div class="review"><h2 style="font-family:var(--display);font-weight:500;font-size:1rem;margin:12px 0 0">À revoir (${S.miss.length})</h2>`+S.miss.map(q=>`<div><p>${esc(q.q)}</p><p class="a">${esc(q.o[q.a])}</p><p class="meta" style="font-family:var(--body);font-size:.9rem">${esc(q.e)}</p></div>`).join("")+`</div>`}
   app.innerHTML=h;window.scrollTo(0,0);
