@@ -344,7 +344,7 @@ let confirmReset=false;
 function home(){
   const done=LEVELS.filter(l=>prog[l.id]&&prog[l.id].passed).length;
   let h=`<h1>La Chaîne des Quiz</h1>
-  <p class="lede">Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique ! Chaque session est un bloc : réussis son quiz pour le miner et débloquer le suivant.</p>
+  <p class="lede">Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique ! Chaque session est un bloc : suis d'abord son cours, puis passe le test pour le miner et débloquer le suivant.</p>
   <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> (plus de 14) pour passer · ${done}/${LEVELS.length} blocs minés</p>
   <p class="rule">Points négatifs : bonne réponse <b>+1</b> · mauvaise réponse <b>−0,5</b> · question passée <b>0</b>. Dans le doute, mieux vaut passer.</p>
   <div class="chain">`;
@@ -356,17 +356,30 @@ function home(){
     let meta=mined?`hash ${fakeHash(l.id,p.best)} · meilleur score ${fmt(p.best)}/20`:open?(p?`meilleur score ${fmt(p.best)}/20 · encore ${fmt(PASS-p.best)} point${PASS-p.best>1?"s":""} à gagner`:l.src):`Réussis le bloc ${i} pour déverrouiller`;
     h+=`<div class="block ${cls}"><div class="num">${String(i+1).padStart(2,"0")}</div><div class="info">
       <h2>${esc(l.title)}</h2><div class="meta">${esc(meta)}</div>
-      <div class="row">${chip}${open?`<button class="${mined?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer":p?"Retenter":"Commencer"}</button>`:""}</div></div></div>`;
+      <div class="row">${chip}${open?`<button class="${mined||p?"ghost":"btn"}" data-learn="${i}">${p?"Revoir le cours":"1. Suivre le cours"}</button><button class="${mined||!p?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer le test":p?"Retenter le test":"2. Passer le test"}</button>`:""}</div></div></div>`;
   });
   h+=`</div><div class="foot"><span>Ta progression est gardée dans ce navigateur.</span>
   <span class="confirm">${confirmReset?`Tout effacer ? <button class="ghost" id="yes">Oui, effacer</button><button class="ghost" id="no">Annuler</button>`:`<button class="ghost" id="reset">Réinitialiser</button>`}</span></div>`;
   app.innerHTML=h;
   app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>start(+b.dataset.go));
+  app.querySelectorAll("[data-learn]").forEach(b=>b.onclick=()=>lesson(+b.dataset.learn));
   const r=document.getElementById("reset");if(r)r.onclick=()=>{confirmReset=true;home()};
   const y=document.getElementById("yes");if(y)y.onclick=()=>{prog={};save();confirmReset=false;home()};
   const n=document.getElementById("no");if(n)n.onclick=()=>{confirmReset=false;home()};
 }
 
+function lesson(i){
+  const l=LEVELS[i],ns=COURSE[l.id]||[];
+  let h=`<div class="top"><button class="ghost" id="quit">← Chaîne</button><span class="qnum">Bloc ${i+1} · Cours</span></div>
+  <h1 style="margin-top:18px">${esc(l.title)}</h1><p class="rule">${esc(l.src)} · ${ns.length} leçons · ensuite, test de ${TOTAL} questions (+1 / −0,5 / 0 si passée, ${PASS}/20 pour réussir)</p>
+  <div class="course">`;
+  ns.forEach((n,k)=>{h+=`<section class="lesson"><span class="cnt">Leçon ${k+1}/${ns.length}</span><h3>${esc(n.t)}</h3><p>${esc(n.b)}</p>
+    <p class="ex"><b>Exemple concret</b>${esc(n.e)}</p><p class="key"><b>À retenir</b>${esc(n.k)}</p></section>`});
+  h+=`</div><div class="row" style="margin-top:20px"><button class="btn" id="go">J'ai appris le cours, passer le test →</button></div>`;
+  app.innerHTML=h;window.scrollTo(0,0);
+  document.getElementById("quit").onclick=home;
+  document.getElementById("go").onclick=()=>start(i);
+}
 let S=null;
 function start(i){
   const l=LEVELS[i];
@@ -421,7 +434,7 @@ function finish(){
   <div style="margin-top:24px" class="score">${fmt(final)}<small>/20</small></div>
   <p class="qnum" style="margin:10px 0 0">${S.good} bonne${S.good>1?"s":""} (+${S.good}) · ${S.bad} fausse${S.bad>1?"s":""} (−${fmt(S.bad*0.5)}) · ${S.skip} passée${S.skip>1?"s":""}</p>
   <p class="verdict">${pass?(nextOpen?`Bloc miné. Le bloc ${S.i+2} est déverrouillé.`:`Bloc miné. Tu as terminé toute la chaîne disponible.`):`Il te manque ${fmt(gap)} point${gap>1?"s":""} pour miner ce bloc. Relis les corrections ci-dessous puis retente.`}</p>
-  <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
+  <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="relearn">Revoir le cours</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
   h+=courseHTML(l.id,S.miss);
   if(S.miss.length)h+=`<div class="row" style="margin-top:20px">${nextOpen?`<button class="btn" id="nxt2">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again2">Retenter ce bloc</button></div>`;
   app.innerHTML=h;window.scrollTo(0,0);
@@ -430,6 +443,7 @@ function finish(){
   const n=document.getElementById("nxt");if(n)n.onclick=()=>start(S.i+1);
   document.getElementById("again").onclick=()=>start(S.i);
   document.getElementById("map").onclick=home;
+  document.getElementById("relearn").onclick=()=>lesson(S.i);
 }
 home();
 if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
