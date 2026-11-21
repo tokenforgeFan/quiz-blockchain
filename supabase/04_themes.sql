@@ -35,7 +35,7 @@ alter table public.levels add column if not exists theme_id text references publ
 
 insert into public.themes(id, ord, title, descr, icon, status) values
   ('blockchain', 1, 'Blockchain et actifs numériques',
-   'Le MOOC de l''Université de Nicosie, session par session : Bitcoin, Ethereum, DeFi, stablecoins…', '⛓', 'live'),
+   'Bitcoin, Ethereum, DeFi, stablecoins… les bases pour comprendre les cryptomonnaies.', '⛓', 'live'),
   ('a-venir-1', 2, 'Thème à venir', 'Bientôt', '📈', 'soon'),
   ('a-venir-2', 3, 'Thème à venir', 'Bientôt', '➕', 'soon')
 on conflict (id) do update set ord=excluded.ord, title=excluded.title, descr=excluded.descr, icon=excluded.icon, status=excluded.status;
