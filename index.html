@@ -95,195 +95,45 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .foot{margin-top:36px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+.acct{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.acct .who{font-family:var(--mono);font-size:.85rem;margin-right:auto}
+.sm{padding:6px 11px;font-size:.88rem}
+.form{display:flex;flex-direction:column;gap:12px;margin-top:20px;max-width:420px}
+.form label{display:flex;flex-direction:column;gap:6px;font-weight:600}
+.form input,.sel{font:inherit;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.sel{width:100%;margin:8px 0}
+.msg{color:var(--bad);font-weight:600;min-height:1.2em}
+.small{font-size:.8rem;color:var(--muted);max-width:65ch}
+.note{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:16px}
+.link-btn{background:none;border:0;padding:0;color:var(--accent);font-weight:700;text-decoration:underline}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px}
+.board{list-style:none;padding:0;margin:16px 0;display:flex;flex-direction:column;gap:8px}
+.board li{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.board li.me{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.board .rk{font-family:var(--mono);font-weight:700;font-size:1.1rem;text-align:center}
+.board .pn small{display:block;color:var(--muted);font-size:.78rem}
+.board .pv{font-family:var(--mono);font-weight:700;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.board .pv small{color:var(--muted);font-size:.7rem;margin-left:3px}
+.h2{font-family:var(--display);font-size:1.15rem;margin:24px 0 10px}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.badge{display:flex;gap:10px;align-items:center;border:1px dashed var(--line);border-radius:10px;padding:10px;opacity:.45;filter:grayscale(1)}
+.badge.on{opacity:1;filter:none;border-style:solid;border-color:var(--accent);background:var(--surface)}
+.badge span{font-size:1.8rem}.badge small{display:block;color:var(--muted);font-size:.78rem}
+.danger{color:var(--bad);border-color:var(--bad)}
+.foot a{color:var(--accent);font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:10px;max-width:90vw;z-index:9}
 </style>
 </head>
 <body>
 
 <div class="wrap" id="app"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://tokenforgefan.github.io/chaine-des-quiz/commun.js"></script>
 <script>
 const PASS=15, TOTAL=20, PTS_OK=1, PTS_KO=-0.5;
 const fmt=n=>String(Math.round(n*2)/2).replace(".",",");
-const LEVELS=[
-{id:"s1",title:"Introduction à la blockchain et au Web3",src:"Session 1 · support PDF et vidéos",qs:[
-["Qu'est-ce qu'une blockchain, au sens le plus simple ?",["Un registre partagé où l'on ajoute des blocs sans pouvoir réécrire les anciens","Une base de données gérée par une seule banque","Un logiciel de minage","Un type de cryptomonnaie"],0,"C'est un registre distribué, en ajout seul : chaque participant en garde une copie et on n'ajoute que de nouveaux blocs."],
-["Que se passe-t-il si on change une seule lettre dans l'entrée d'une fonction de hachage ?",["Le hash change d'une lettre","Le hash reste identique","Le hash devient complètement différent","La fonction renvoie une erreur"],2,"C'est l'effet avalanche : une infime modification donne une empreinte totalement différente. C'est ce qui rend toute falsification visible."],
-["Qu'est-ce qui relie un bloc au précédent ?",["La date du bloc","Le hash du bloc précédent, inscrit dans son en-tête","L'adresse du mineur","Le montant total des transactions"],1,"Chaque bloc contient l'empreinte du bloc d'avant. Modifier un bloc casse tous les liens qui suivent."],
-["Pourquoi est-il si difficile de modifier une transaction ancienne sur Bitcoin ?",["Elle est chiffrée par la police","Il faudrait refaire le travail de ce bloc et de tous les suivants, plus vite que le reste du réseau","Les anciennes transactions sont supprimées","Seul Satoshi peut le faire"],1,"Il faudrait recalculer la preuve de travail de toute la chaîne qui suit et dépasser la majorité de la puissance de calcul."],
-["Quel problème la blockchain a-t-elle résolu pour la monnaie numérique ?",["La double dépense sans tiers de confiance","L'inflation","Le stockage des photos","La vitesse d'Internet"],0,"Un fichier numérique se copie. Sans banque, il fallait empêcher de dépenser deux fois la même unité : le registre partagé et le consensus le permettent."],
-["Quel est le rôle d'un nœud ?",["Imprimer des billets","Garder une copie du registre et vérifier les règles","Fixer le prix","Stocker les mots de passe"],1,"Un nœud vérifie chaque bloc et chaque transaction selon les règles du protocole et refuse ce qui est invalide."],
-["Avec quelle clé signe-t-on une transaction ?",["La clé publique","La clé privée","L'adresse","Le hash du bloc"],1,"La clé privée signe ; la clé publique permet à tout le monde de vérifier la signature sans connaître la clé privée."],
-["Que prouve une signature numérique valide ?",["Que la transaction est gratuite","Que le détenteur de la clé privée a autorisé la transaction et qu'elle n'a pas été modifiée","L'identité civile de l'expéditeur","Que le bloc est miné"],1,"Elle prouve l'autorisation et l'intégrité du message, pas l'identité réelle de la personne."],
-["Comment résume-t-on souvent l'évolution Web1 → Web2 → Web3 ?",["Lire → Lire et écrire → Lire, écrire et posséder","Texte → Images → Vidéo","Ordinateur → Mobile → Montre","Gratuit → Payant → Gratuit"],0,"Le Web3 ajoute la propriété : l'utilisateur détient ses actifs et ses données via ses clés."],
-["En preuve de travail, comment un mineur gagne-t-il le droit d'ajouter un bloc ?",["Par tirage au sort parmi les plus riches","En trouvant par essais successifs un hash inférieur à une cible","Par vote des utilisateurs","En payant une licence"],1,"Il essaie des milliards de valeurs (le nonce) jusqu'à obtenir un hash sous la cible fixée par la difficulté."],
-["En preuve d'enjeu, qu'est-ce qui sécurise le réseau ?",["L'électricité consommée","Les jetons que les validateurs engagent et peuvent perdre s'ils trichent","Les serveurs d'une entreprise","Les mots de passe"],1,"Les validateurs mettent leurs jetons en jeu. Tricher coûte cher, sans dépense énergétique massive."],
-["Quelle est la différence entre une blockchain publique et une blockchain permissionnée ?",["Aucune","Sur une publique, n'importe qui peut participer ; sur une permissionnée, l'accès est contrôlé","La publique est gratuite, l'autre payante","La permissionnée n'utilise pas de blocs"],1,"Bitcoin et Ethereum sont ouvertes à tous. Une blockchain d'entreprise réserve la validation à des participants autorisés."],
-["Quand a été miné le bloc genèse de Bitcoin ?",["Janvier 2009","Octobre 2008","Mars 2013","Juillet 2015"],0,"Le livre blanc date d'octobre 2008, le bloc genèse du 3 janvier 2009."],
-["Que signifie « immuable » pour une blockchain, en pratique ?",["Rien ne peut jamais changer, même en théorie","Modifier l'historique est si coûteux que c'est pratiquement impossible","Les prix ne bougent pas","Le code ne peut jamais être mis à jour"],1,"L'immuabilité est économique et pratique, pas absolue : elle repose sur le coût d'une réécriture."],
-["Qu'est-ce qu'un contrat intelligent ?",["Un contrat papier signé chez un notaire","Un programme sur la blockchain qui s'exécute automatiquement selon ses règles","Une IA qui négocie","Un accord entre mineurs"],1,"C'est du code déployé sur la chaîne : si les conditions sont remplies, il s'exécute sans intermédiaire."],
-["Quel est le rôle d'un oracle ?",["Prédire le prix futur","Apporter à la blockchain des données du monde extérieur","Miner des blocs","Garder les clés"],1,"Une blockchain ne voit pas le monde extérieur. L'oracle lui transmet des données comme un cours ou un résultat sportif."],
-["Qu'est-ce qui caractérise un NFT ?",["Il est interchangeable avec un autre","Il est unique et non interchangeable","C'est toujours une image","Il n'a pas de propriétaire"],1,"Non fongible veut dire qu'un jeton n'équivaut pas à un autre, contrairement à un bitcoin qui vaut un autre bitcoin."],
-["Qu'est-ce qu'un stablecoin ?",["Une crypto dont la valeur suit un actif de référence comme le dollar","Une crypto qui ne peut pas baisser","Une crypto minée lentement","Une monnaie de banque centrale"],0,"USDT ou USDC suivent le dollar. Leur stabilité dépend des réserves ou du mécanisme qui les soutient."],
-["Quels sont les trois termes du « trilemme de la blockchain » ?",["Prix, volume, liquidité","Décentralisation, sécurité, scalabilité","Vitesse, frais, design","Minage, staking, trading"],1,"Il est difficile d'obtenir les trois à la fois : gagner en débit se paie souvent en décentralisation."],
-["À quoi sert une solution de couche 2 (layer 2) ?",["Remplacer la blockchain principale","Traiter des transactions hors de la chaîne principale puis régler le résultat dessus","Doubler l'offre de jetons","Stocker des fichiers"],1,"Lightning pour Bitcoin ou les rollups pour Ethereum augmentent le débit en s'appuyant sur la sécurité de la couche 1."]
-]},
-{id:"s2",title:"Bitcoin et monnaie numérique",src:"Q&R n°2 · Garrick Hileman",qs:[
-["Quel est le nombre maximal de bitcoins ?",["21 millions","100 millions","Illimité","2,1 milliards"],0,"L'offre est plafonnée à 21 millions par le protocole."],
-["Que divise un halving ?",["Le prix du bitcoin","La récompense de bloc des mineurs","Les frais de transaction","Le nombre de nœuds"],1,"Tous les 210 000 blocs, soit environ quatre ans, la nouvelle émission par bloc est divisée par deux."],
-["Après le halving d'avril 2024, quelle est la subvention par bloc ?",["6,25 BTC","3,125 BTC","12,5 BTC","1,5625 BTC"],1,"Elle est passée de 6,25 à 3,125 BTC. Le prochain halving est attendu vers 2028."],
-["Quel est le temps moyen entre deux blocs Bitcoin ?",["1 minute","10 minutes","1 heure","15 secondes"],1,"Environ 10 minutes, maintenu par l'ajustement de difficulté."],
-["Tous les combien la difficulté de minage s'ajuste-t-elle ?",["Chaque bloc","Tous les 2016 blocs, environ deux semaines","Chaque année","Jamais"],1,"Si les blocs ont été trop rapides, la difficulté monte ; trop lents, elle baisse."],
-["Comment s'appelle la plus petite unité de bitcoin ?",["Le wei","Le satoshi","Le lovelace","Le gwei"],1,"1 satoshi = 0,00000001 BTC."],
-["Selon quoi se calculent les frais d'une transaction Bitcoin ?",["Le montant envoyé","La taille de la transaction en données et la demande du moment","La distance entre les pays","L'âge du portefeuille"],1,"On paie la place occupée dans le bloc (en vbytes), pas la somme envoyée."],
-["Qu'est-ce que le mempool ?",["La réserve d'un exchange","La file d'attente des transactions pas encore incluses dans un bloc","Un pool de minage","Un portefeuille froid"],1,"Les mineurs y piochent en priorité les transactions qui paient le plus par octet."],
-["Combien de confirmations considère-t-on traditionnellement comme très sûr ?",["1","3","6","100"],2,"Six blocs empilés au-dessus rendent une annulation extrêmement improbable."],
-["Que s'est-il passé le 22 mai 2010 ?",["Le premier halving","L'achat de deux pizzas pour 10 000 BTC","La création d'Ethereum","Le premier ETF"],1,"C'est le Bitcoin Pizza Day, premier achat connu d'un bien réel en bitcoin."],
-["Sur quoi repose la valeur d'une monnaie fiduciaire comme l'euro ?",["Sur l'or stocké en banque","Sur la confiance et le cours légal fixé par l'État","Sur la puissance de calcul","Sur le pétrole"],1,"Depuis la fin de l'étalon-or, sa valeur tient à la confiance dans l'émetteur et à son statut légal."],
-["Quelles sont les trois fonctions classiques de la monnaie ?",["Épargne, crédit, impôt","Moyen d'échange, unité de compte, réserve de valeur","Création, destruction, transfert","Achat, vente, location"],1,"Le débat sur Bitcoin porte surtout sur son rôle de réserve de valeur."],
-["Sur quel argument repose l'idée de Bitcoin « or numérique » ?",["Il est jaune","Sa rareté est programmée et vérifiable","Il est garanti par les banques","Il est stable"],1,"Comme l'or, il est rare et coûteux à produire, mais son offre est connue à l'avance."],
-["Qu'est-ce qu'une CBDC ?",["Une crypto décentralisée","Une monnaie numérique émise par une banque centrale","Un stablecoin privé","Un ETF"],1,"L'euro numérique en est un exemple : numérique, mais centralisé et contrôlé par l'émetteur."],
-["Quel pays a fait du bitcoin une monnaie légale en 2021 ?",["La Suisse","Le Salvador","Le Japon","Le Canada"],1,"Le Salvador, en septembre 2021. Le statut a ensuite été assoupli en 2025 dans le cadre d'un accord avec le FMI."],
-["Quand les ETF bitcoin au comptant ont-ils été autorisés aux États-Unis ?",["Janvier 2024","Décembre 2017","Mars 2021","Ils ne l'ont jamais été"],0,"La SEC les a approuvés le 10 janvier 2024, ouvrant l'accès aux investisseurs institutionnels."],
-["Qu'apporte le Lightning Network ?",["Plus de bitcoins","Des paiements rapides et peu chers via des canaux hors chaîne","Un nouveau consensus","L'anonymat complet"],1,"Deux parties ouvrent un canal sur la chaîne, échangent autant qu'elles veulent hors chaîne, puis règlent le solde."],
-["Bitcoin est-il anonyme ?",["Oui, totalement","Non, il est pseudonyme : toutes les transactions sont publiques et traçables","Seulement le week-end","Uniquement avec un exchange"],1,"Les adresses ne portent pas de nom, mais l'analyse de chaîne peut relier une adresse à une identité."],
-["Quelle est la différence entre un soft fork et un hard fork ?",["Le soft fork reste compatible avec les anciens nœuds, le hard fork non","Le hard fork est plus rapide","Le soft fork crée une nouvelle crypto","Aucune"],0,"SegWit et Taproot étaient des soft forks. Bitcoin Cash est né d'un hard fork en 2017."],
-["De quoi se compose la rémunération d'un mineur ?",["Uniquement des frais","De la subvention de bloc et des frais des transactions incluses","D'un salaire de la fondation","Des intérêts bancaires"],1,"À mesure que la subvention diminue, les frais devront prendre le relais pour financer la sécurité."]
-]},
-{id:"s3",title:"Blockchains programmables : Cardano et Ethereum",src:"Q&R n°3 · John Greene, Cardano Foundation",qs:[
-["Qui a principalement conçu Ethereum, lancé en 2015 ?",["Satoshi Nakamoto","Vitalik Buterin","Charles Hoskinson seul","Changpeng Zhao"],1,"Vitalik Buterin l'a décrit en 2013, avec plusieurs cofondateurs dont Charles Hoskinson."],
-["Qu'exécute l'EVM ?",["Le minage de bitcoins","Les contrats intelligents d'Ethereum","Les paiements Lightning","Les mises à jour de portefeuille"],1,"L'Ethereum Virtual Machine exécute le code des contrats de façon identique sur tous les nœuds."],
-["À quoi correspond le gas sur Ethereum ?",["Au prix de l'ETH","À la quantité de calcul nécessaire, payée en frais","À la vitesse du réseau","Au nombre de validateurs"],1,"Chaque opération coûte du gas : plus un contrat calcule, plus la transaction coûte."],
-["Qui a fondé Cardano ?",["Vitalik Buterin","Charles Hoskinson, cofondateur d'Ethereum","Gavin Wood","Satoshi Nakamoto"],1,"Charles Hoskinson a quitté Ethereum et lancé Cardano, via IOHK (aujourd'hui Input Output)."],
-["Quel protocole de consensus utilise Cardano ?",["Proof of Work","Ouroboros, une preuve d'enjeu","Proof of Authority","Tendermint"],1,"Ouroboros est une famille de protocoles de preuve d'enjeu publiés avec preuves de sécurité."],
-["Quel modèle comptable utilise Cardano ?",["Le modèle à comptes","L'eUTXO, des UTXO étendus","Un registre bancaire","Le modèle DAG"],1,"Cardano étend le modèle de Bitcoin pour y attacher du code et des données."],
-["Quel avantage pratique offre le modèle eUTXO ?",["Des frais nuls","Des frais et un résultat connus avant d'envoyer la transaction","Des blocs plus gros","Pas besoin de portefeuille"],1,"Une transaction peut être validée localement : elle réussit ou échoue sans payer de frais pour un échec imprévu."],
-["Sur quel langage repose Plutus, le langage des contrats de Cardano ?",["Solidity","Haskell","Python","Rust"],1,"Haskell est un langage fonctionnel qui se prête à la vérification formelle."],
-["Qu'est-ce qui distingue la démarche de développement de Cardano ?",["Le développement le plus rapide possible","L'appui sur la recherche académique évaluée par des pairs","L'absence de documentation","Un code fermé"],1,"Les protocoles sont publiés et relus avant d'être implémentés, au prix d'un rythme plus lent."],
-["Que se passe-t-il quand on délègue ses ADA à un pool ?",["Les ADA quittent votre portefeuille pendant un an","Les ADA restent dans votre portefeuille et restent disponibles","Les ADA sont brûlés","Le pool devient propriétaire"],1,"Le staking sur Cardano est liquide : pas de verrouillage, vous gardez la garde de vos jetons."],
-["Quand Ethereum est-il passé à la preuve d'enjeu ?",["The Merge, septembre 2022","Juillet 2015","Janvier 2020","Il est toujours en preuve de travail"],0,"The Merge a réduit la consommation électrique du réseau de plus de 99 %."],
-["Quel est le rôle de la Cardano Foundation ?",["Miner les blocs","Une entité suisse indépendante qui promeut l'adoption et soutient la gouvernance de Cardano","Fixer le prix de l'ADA","Émettre des ADA"],1,"Basée à Zoug, elle travaille sur l'adoption par les entreprises, l'éducation et la gouvernance."],
-["Comment s'appelle l'ère de gouvernance décentralisée de Cardano ?",["Byron","Shelley","Voltaire","Goguen"],2,"Voltaire, avec la CIP-1694, a introduit le vote on-chain et les représentants délégués (DReps)."],
-["Quelle particularité ont les jetons natifs sur Cardano ?",["Ils nécessitent un contrat intelligent comme les ERC-20","Ils sont gérés directement par le registre, sans contrat intelligent","Ils sont interdits","Ils ne peuvent pas être échangés"],1,"Sur Ethereum, un jeton ERC-20 est un contrat. Sur Cardano, le registre gère les jetons nativement, comme l'ADA."],
-["Que désigne la DeFi ?",["Les services financiers des banques en ligne","Des services financiers (prêt, échange, épargne) fonctionnant par contrats intelligents sans intermédiaire","La défiscalisation","Un indice boursier"],1,"Uniswap, Aave ou sur Cardano Minswap et Liqwid en sont des exemples."],
-["Qu'est-ce qu'une DAO ?",["Une banque décentralisée","Une organisation dont les règles et les votes sont gérés par contrats intelligents","Un type de NFT","Un exchange centralisé"],1,"Les détenteurs de jetons de gouvernance votent les décisions, appliquées par le code."],
-["Quel est le principal risque d'un contrat intelligent ?",["Il est trop lent","Une faille dans le code peut être exploitée et les fonds volés","Il coûte trop cher à lire","Il disparaît après un an"],1,"Le piratage de The DAO en 2016 a conduit au hard fork d'Ethereum et à la naissance d'Ethereum Classic."],
-["Que signifie la composabilité en DeFi ?",["Les protocoles peuvent s'assembler comme des briques","Les jetons peuvent être fusionnés","Les blocs sont compressés","Le code peut être réécrit"],0,"On parle de « legos monétaires » : un protocole en utilise un autre directement."],
-["Pourquoi les ponts entre blockchains (bridges) sont-ils souvent visés par les pirates ?",["Ils sont lents","Ils concentrent de gros montants verrouillés et une logique complexe","Ils n'ont pas de code","Ils sont gérés par l'État"],1,"Ronin (environ 600 M$) et Wormhole (environ 320 M$) comptent parmi les plus gros vols de l'histoire."],
-["Comment s'appelle la plus petite unité de l'ADA ?",["Le satoshi","Le lovelace","Le wei","Le gwei"],1,"1 ADA = 1 000 000 lovelace, en hommage à Ada Lovelace."]
-]},
-{id:"s4",title:"Sécurité et confidentialité des portefeuilles",src:"Q&R n°4 · Lucien, Trezor",qs:[
-["Que signifie « not your keys, not your coins » ?",["Les clés USB sont dangereuses","Si vous ne détenez pas les clés privées, vous ne contrôlez pas vraiment vos cryptos","Il faut changer de clé chaque mois","Les exchanges sont toujours sûrs"],1,"Sur une plateforme, vous détenez une créance. FTX, Celsius ou AscendEX ont montré ce que cela peut coûter."],
-["Qu'est-ce que la garde personnelle (self-custody) ?",["Confier ses cryptos à un exchange","Détenir soi-même ses clés privées","Assurer ses cryptos","Les stocker chez un notaire"],1,"Vous êtes seul responsable, sans intermédiaire qui puisse bloquer ou perdre vos fonds."],
-["Que représente la phrase de récupération de 12 ou 24 mots ?",["Un mot de passe de connexion à l'appli","Le portefeuille lui-même : quiconque la possède contrôle les fonds","Un code de support","Une adresse de réception"],1,"Toutes les clés privées en dérivent. Perdre l'appareil n'est rien si on a la phrase ; perdre la phrase, si."],
-["Où conserver sa phrase de récupération ?",["En photo sur son téléphone","Dans un e-mail à soi-même","Sur un support physique hors ligne, papier ou métal","Dans un gestionnaire de notes cloud"],2,"Jamais sur un appareil connecté. Le métal résiste au feu et à l'eau."],
-["Un « support technique » vous demande votre phrase de récupération. Que faire ?",["La donner pour débloquer le compte","Refuser : aucun service légitime ne la demande jamais","N'en donner que les 12 premiers mots","La dicter par téléphone"],1,"C'est l'arnaque la plus répandue. Même une partie de la phrase réduit fortement la sécurité."],
-["À quoi sert une passphrase (le « 25e mot ») ?",["À accélérer les transactions","À ouvrir un portefeuille caché : la phrase seule ne suffit plus à vider les fonds","À remplacer le code PIN","À réduire les frais"],1,"Chaque passphrase dérive un portefeuille différent. Un voleur qui trouve les 24 mots ne voit que le portefeuille sans passphrase."],
-["Que se passe-t-il si vous oubliez votre passphrase ?",["Trezor peut la réinitialiser","Les fonds de ce portefeuille sont définitivement perdus","On la retrouve dans l'appli","Rien, la phrase de 24 mots suffit"],1,"La passphrase n'est stockée nulle part. Elle se sauvegarde séparément de la phrase, sur un autre support."],
-["Comment fonctionne une sauvegarde Shamir (SLIP-39) ?",["La phrase est copiée trois fois","Le secret est découpé en parts ; il en faut un nombre minimal (par exemple 2 sur 3) pour le reconstituer","On utilise trois portefeuilles différents","Les mots sont chiffrés par Trezor"],1,"Une part seule ne révèle rien, et perdre une part n'est pas grave si le seuil reste atteignable."],
-["Quelle est la différence entre Shamir et multisig ?",["Aucune","Shamir découpe la sauvegarde d'une seule clé ; le multisig exige plusieurs clés distinctes qui signent chacune","Le multisig est réservé à Ethereum","Shamir est plus ancien"],1,"Avec Shamir, la clé est reconstituée à un moment. Avec le multisig, elle n'existe jamais en un seul endroit."],
-["Quel est l'intérêt d'un multisig 2 sur 3 ?",["Doubler ses bitcoins","Perdre ou se faire voler une clé sans perdre les fonds","Envoyer sur trois blockchains","Payer moins de frais"],1,"Il supprime le point de défaillance unique : un attaquant doit compromettre deux clés."],
-["Votre nouveau portefeuille arrive avec une phrase déjà imprimée dans la boîte. Que conclure ?",["C'est pratique","C'est normal sur les nouveaux modèles","C'est une attaque de la chaîne d'approvisionnement : ne pas l'utiliser","Il suffit de changer le PIN"],2,"La phrase doit toujours être générée par l'appareil, devant vous. Une phrase fournie est connue de quelqu'un d'autre."],
-["Où acheter un portefeuille matériel ?",["Sur une place de marché d'occasion, c'est moins cher","Directement chez le fabricant ou un revendeur officiel","Auprès d'un vendeur sur Telegram","Peu importe"],1,"Un appareil d'occasion ou de source douteuse peut avoir été modifié."],
-["Pourquoi vérifier l'adresse de réception sur l'écran du portefeuille matériel ?",["Pour le design","Parce qu'un logiciel malveillant peut remplacer l'adresse affichée ou copiée sur l'ordinateur","Pour économiser des frais","Ce n'est pas utile"],1,"L'écran de l'appareil est la seule source de confiance. Certains malwares remplacent l'adresse dans le presse-papiers."],
-["Qu'est-ce que l'empoisonnement d'adresse (address poisoning) ?",["Un virus dans la blockchain","L'envoi d'une petite transaction depuis une adresse qui ressemble à la vôtre pour qu'on la recopie par erreur","Un bug de Trezor","Une attaque à 51 %"],1,"L'attaquant mise sur la copie depuis l'historique. Vérifiez toujours l'adresse entière, pas seulement le début et la fin."],
-["Que fait un « drainer » quand vous signez une approbation illimitée ?",["Il accélère vos transactions","Il peut ensuite retirer vos jetons sans nouvelle autorisation","Il bloque votre compte","Il vous rembourse"],1,"Lisez ce que vous signez et révoquez régulièrement les approbations inutiles."],
-["Pourquoi un portefeuille matériel protège-t-il mieux qu'une appli ?",["Il est plus cher","Les clés privées ne quittent jamais l'appareil : il signe en interne","Il est plus rapide","Il n'a pas besoin de phrase"],1,"Même sur un ordinateur infecté, l'attaquant ne peut pas extraire la clé, seulement tenter de vous faire signer."],
-["Quelle est la différence entre portefeuille chaud et froid ?",["La couleur de l'appareil","Le chaud est connecté à Internet, le froid garde les clés hors ligne","Le froid est pour l'épargne en euros","Il n'y en a pas"],1,"On garde peu de fonds sur un portefeuille chaud, pour l'usage courant, et l'épargne au froid."],
-["Pourquoi faire tourner son propre nœud complet ?",["Pour miner plus","Pour vérifier soi-même les transactions et ne pas révéler ses adresses à un serveur tiers","Pour payer moins d'impôts","C'est obligatoire"],1,"Sans nœud, votre portefeuille interroge le serveur de quelqu'un d'autre, qui voit vos adresses et votre solde."],
-["Qu'est-ce qui caractérise un Coldcard ?",["Il est multi-cryptos","Il est dédié à Bitcoin et peut fonctionner sans connexion directe (air-gapped), via carte microSD","Il se connecte en Wi-Fi","Il n'a pas d'écran"],1,"Les transactions partiellement signées (PSBT) transitent par carte mémoire, sans câble vers l'ordinateur."],
-["Quelle règle de base limite la casse en cas d'erreur ?",["Tout garder sur un seul exchange","Tester d'abord une petite transaction avant un gros envoi","Partager sa phrase avec un proche par SMS","Ne jamais mettre à jour son appareil"],1,"Un petit envoi de test confirme l'adresse et le réseau avant de déplacer une somme importante."]
-]},
-{id:"s5",title:"Finance décentralisée (DeFi)",src:"Session 5 · support PDF, tutoriels et Q&R n°5 · Luke Martinez, Avalanche Team1",qs:[
-["Quels sont les deux piliers de la finance traditionnelle que la DeFi cherche à supprimer ?",["La garde des actifs par un tiers et l'accès sur autorisation lié à l'identité","Les taux d'intérêt et l'inflation","Les impôts et la régulation","Les billets et les pièces"],0,"En TradFi, une institution garde vos actifs (vous détenez une créance) et filtre qui peut participer. La DeFi vise la garde personnelle et l'accès sans permission."],
-["Le site web d'Uniswap et ses contrats intelligents appartiennent à quelles couches de la pile DeFi ?",["Les deux à la couche de règlement","Le site à la couche application, les contrats à la couche protocole","Le site à la couche protocole, les contrats à la couche actifs","Les deux à la couche d'agrégation"],1,"Le site n'est qu'une porte d'entrée. L'application, ce sont les contrats : ils restent utilisables même si le site tombe."],
-["Pourquoi les prêts DeFi sont-ils surcollatéralisés ?",["Pour enrichir les développeurs","Parce que sans identité, score de crédit ni tribunal, seul le collatéral garantit le remboursement","Parce que la loi l'impose","Pour payer moins de gas"],1,"Un emprunteur pseudonyme n'aurait aucune raison de rembourser si sa garantie valait moins que sa dette. Le collatéral est le mécanisme d'exécution."],
-["Tu déposes 5 ETH à 3 000 $ et empruntes 10 000 USDC. Le seuil de liquidation est de 120 %. À quel prix de l'ETH la liquidation commence-t-elle ?",["2 000 $","2 250 $","2 400 $","2 700 $"],2,"120 % de 10 000 $ = 12 000 $ de garantie, soit 12 000 ÷ 5 = 2 400 $ par ETH. Une baisse de 20 % suffit."],
-["Mango Markets, octobre 2022 : environ 114 M$ retirés. Qu'est-ce qui a été manipulé ?",["L'oracle a été piraté et a menti","Le marché d'un jeton peu échangé (MNGO) : l'oracle a fidèlement rapporté un prix gonflé","La clé privée d'un administrateur","Le consensus de Solana"],1,"L'oracle a dit vrai sur un marché faussé. Un protocole n'est fiable que si les prix qu'il reçoit le sont, d'où le danger des jetons peu liquides."],
-["Qu'est-ce qui distingue un prêt flash ?",["Il dure 24 heures","Il est emprunté et remboursé dans la même transaction, sinon tout est annulé","Il exige un collatéral de 150 %","Il est réservé aux banques"],1,"Sans collatéral ni identité, mais sans risque de défaut : si le remboursement (plus 0,05 % sur Aave V3) n'arrive pas avant la fin de la transaction, rien ne s'exécute."],
-["Comment l'attaquant de Beanstalk (avril 2022) a-t-il vidé 182 M$ ?",["Il a volé une clé privée","Un prêt flash d'un milliard lui a donné environ 79 % des votes pour faire passer sa propre proposition","Il a manipulé un oracle Chainlink","Il a fait une attaque à 51 % sur Ethereum"],1,"C'est une attaque de gouvernance. Défenses : délai entre vote et exécution, et droits de vote mesurés sur des soldes passés."],
-["Pourquoi un carnet d'ordres classique fonctionne-t-il mal sur une blockchain comme Ethereum ?",["Les ordres sont secrets","Chaque ordre ou annulation coûte du gas, les teneurs de marché fuient et les ordres visibles se font devancer","Les blockchains ne connaissent pas les prix","C'est interdit par la loi"],1,"Coût, liquidité faible et délai des blocs. D'où les pools et les AMM. Exception : des chaînes à très haut débit comme Hyperliquid."],
-["Un pool contient 100 ETH et 300 000 USDC (x · y = k). Alice vend 10 ETH. Quel prix affiche le pool ensuite ?",["3 000 $","2 727 $","2 479 $","2 700 $"],2,"k = 30 000 000. Avec 110 ETH, il reste 272 727 USDC : le prix devient 272 727 ÷ 110 ≈ 2 479 $. Alice a obtenu en moyenne 2 727 $ par ETH."],
-["Même échange de 10 ETH, mais dans un pool deux fois plus profond. Que se passe-t-il ?",["Le glissement double","Le glissement est à peu près divisé par deux","Le prix ne bouge pas du tout","L'échange est refusé"],1,"Plus le pool est profond, moins un échange déplace le prix : environ 2 857 $ par ETH au lieu de 2 727 $."],
-["Qu'est-ce que la perte impermanente d'un fournisseur de liquidité ?",["Les frais de gas payés au dépôt","Le manque à gagner par rapport à la simple détention des jetons, causé par l'arbitrage quand le prix bouge","Un piratage du pool","L'impôt sur les plus-values"],1,"L'arbitragiste rachète au pool le jeton qui monte : le LP vend ses gagnants et achète ses perdants. Elle ne devient réelle qu'au retrait."],
-["Pour un pool 50/50, le prix d'un jeton double ou est divisé par deux. Quelle perte impermanente dans chaque cas ?",["Gain si ça double, perte si ça baisse","Environ −5,7 % dans les deux cas","−50 % dans les deux cas","Aucune perte"],1,"Formule 2√r ÷ (1 + r) − 1 : c'est le multiple qui compte, pas le sens. ×2 ou ×½ donne −5,7 % ; ×5 ou ×⅕ donne −25,5 %."],
-["Pourquoi les pools de stablecoins comme USDC/USDT (Curve) subissent-ils très peu de perte impermanente ?",["Ils ne paient pas de frais","Le rapport de prix entre les deux jetons reste proche de 1","Ils sont assurés par l'État","Ils ne sont pas sur une blockchain"],1,"Sans écart de prix, l'arbitrage n'a rien à prendre au LP. La perte grandit avec l'ampleur du mouvement."],
-["Sur Uniswap v3, que se passe-t-il quand le prix sort de la plage choisie par le LP ?",["Il gagne plus de frais","Sa position ne touche plus de frais et ne contient presque plus qu'un seul jeton","Ses fonds sont liquidés","La plage s'élargit automatiquement"],1,"La liquidité concentrée rapporte plus par dollar tant qu'on est dans la plage, mais hors plage elle ne sert plus et on détient surtout le jeton le plus faible."],
-["Tu fournis de la liquidité à une paire de deux grands stablecoins en dollar. Quel palier de frais choisir, d'après le tutoriel ?",["1 %, le plus élevé","Un palier très bas (0,01 % ou 0,05 %), car les traders attendent des frais minimes sur une paire stable","Peu importe","0,3 % obligatoirement"],1,"Paire stable et très liquide : frais très bas. Paire de petits jetons exotiques : les traders acceptent jusqu'à 1 %. 0,3 % convient à la plupart des paires."],
-["Sur Aave, que signifie un facteur de santé (health factor) qui passe sous 1 ?",["Le prêt est remboursé","La position peut être liquidée : un robot vend le collatéral pour rembourser la dette","Le taux d'intérêt baisse","Le collatéral est doublé"],1,"L'emprunteur garde ce qu'il a emprunté mais perd sa garantie, avec une pénalité. Dans le tutoriel, il vise 2,73 pour garder une marge."],
-["Tu déposes des USDC sur Aave. Que représente l'aToken que tu reçois ?",["Un jeton de gouvernance gratuit","Le reçu de ton dépôt, qui permet de récupérer tes fonds plus les intérêts","Une dette envers Aave","Un NFT de collection"],1,"Garde-le précieusement : c'est lui qui prouve ton dépôt. Sur Uniswap v3, c'est un NFT qui joue ce rôle pour une position de liquidité."],
-["Mars 2023 : la Silicon Valley Bank fait faillite et le DAI, stablecoin décentralisé, tombe vers 0,88 $. Pourquoi ?",["Le code du DAI avait un bug","Environ 36 % de sa garantie était de l'USDC, dont des réserves dormaient chez SVB","Ethereum était en panne","Les mineurs ont refusé ses transactions"],1,"C'est la composabilité vue côté dominos : une position DeFi n'est jamais plus sûre que tout ce qui se trouve en dessous."],
-["Tu stakes de l'AVAX via BENQI et reçois du sAVAX. Comment récupérer tes AVAX ?",["Instantanément et sans frais, toujours","Par le protocole (15 jours d'attente puis 2 jours pour réclamer) ou en vendant le sAVAX sur le marché, au prix des acheteurs","Impossible, c'est bloqué à vie","Seulement en appelant le support"],1,"Un jeton de staking liquide ne garantit pas une sortie instantanée : la voie rapide dépend des acheteurs et de la liquidité disponibles."],
-["Selon Chainalysis, comment les piratages ont-ils évolué entre 2022 et 2025 ?",["Ils ont disparu","Ils sont passés des failles de code DeFi aux clés privées et aux personnes (Bybit, 1,5 Md$ en 2025)","Ils ne visent plus que Bitcoin","Ils ne touchent que les petits protocoles"],1,"Le code DeFi s'est durci : les attaquants piègent désormais les signataires, comme chez Bybit ou Drift en 2026."]
-]},
-{id:"s6",title:"Les marchés prédictifs",src:"Session 6 · support PDF, vidéo Polymarket et Q&R n°6 · Apostolos Kourtis",qs:[
-["Sur un marché prédictif, un contrat OUI s'échange à 0,72 $. Comment le lit-on ?",["72 % de chances que l'événement se produise, selon le marché","Un gain garanti de 72 %","72 % des traders ont voté OUI","Le contrat paiera 0,72 $ si OUI gagne"],0,"Un OUI paie 1 $ si la condition est remplie, 0 $ sinon. Son prix entre 0 et 1 $ se lit comme une probabilité implicite du marché, ici environ 72 %. C'est une approximation, pas une vérité."],
-["Tu achètes un OUI à 0,30 $ puis tu le revends à 0,45 $ avant la fin. Quel est ton résultat ?",["Tu perds, car l'événement ne s'est pas encore produit","+0,15 $ par contrat avant frais, quel que soit le résultat final","+0,70 $ par contrat","Tu dois attendre le règlement pour savoir"],1,"On n'est pas obligé d'attendre le règlement : on peut revendre à tout moment. 0,45 − 0,30 = 0,15 $ de gain, comme sur n'importe quel marché."],
-["En 1906, 800 visiteurs d'une foire anglaise estiment le poids d'un bœuf. Qu'observe Francis Galton ?",["La foule se trompe lourdement, comme il le pensait","La médiane des estimations tombe à moins de 1 % du poids réel, mieux que chaque expert","Seuls les bouchers trouvent le bon poids","Les estimations sont réparties au hasard"],1,"C'est la sagesse des foules : chacun détient un morceau d'information et l'agrégation annule les erreurs individuelles. Un marché prédictif fait la même chose, en temps réel et avec une incitation financière."],
-["Pendant le Q&R, le professeur demande aux étudiants de prédire la décision de la Cour suprême. Pourquoi est-ce un sondage et pas un marché prédictif ?",["Parce qu'il y avait trop peu de participants","Parce qu'aucune récompense ne venait d'une bonne réponse : sans incitation à être précis, ce sont des opinions","Parce que la question était binaire","Parce que le vote était anonyme"],1,"Ce qui fait un marché prédictif, c'est l'incitation : on met son argent là où est sa conviction. Sans gain ni perte, on obtient un sondage."],
-["Une paire OUI + NON s'achète 0,97 $ au total. Que fait un arbitragiste ?",["Rien, c'est normal","Il achète la paire : elle paiera toujours 1 $, soit 0,03 $ de gain sans risque avant frais","Il vend uniquement le NON","Il attend que le prix monte à 1,10 $"],1,"OUI + NON paie toujours exactement 1 $. Si la paire coûte moins, l'acheter verrouille un profit. C'est ce qui force les deux prix à rester cohérents."],
-["Quelle différence entre un bookmaker et un marché prédictif ?",["Aucune, ce sont deux casinos","Le bookmaker fixe les cotes avec sa marge et gagne quand tu perds ; sur un marché, les prix naissent des échanges entre traders et la plateforme vit des frais","Le marché prédictif fixe des cotes fixes","Le bookmaker ne prend pas de marge"],1,"Chez un bookmaker, l'espérance tourne souvent autour de −10 % et les gagnants réguliers sont limités ou bannis. Un marché prédictif est une bourse : on parie contre d'autres traders."],
-["Un festival perd 40 000 $ s'il pleut. Il achète 10 000 OUI « pluie » à 25 ¢. Quel usage fait-il du marché ?",["De la spéculation pure","Une couverture partielle : 2 500 $ dépensés, 10 000 $ touchés s'il pleut","Une prévision pour la météo","Un délit d'initié"],1,"C'est du hedging : on compense une perte liée à un événement précis. Ici la couverture n'est que partielle (10 000 $ sur 40 000 $)."],
-["Sur Polymarket, un marché affiche bid 17 ¢ et ask 18 ¢. Quelle probabilité est affichée et quel est l'écart (spread) ?",["17 % et 18 ¢","Environ 18 % (le milieu bid–ask) et 1 ¢","35 % et 1 ¢","83 % et 17 ¢"],1,"Polymarket affiche le point médian entre la meilleure offre d'achat et de vente. Le spread = ask − bid = 1 ¢. C'est pourquoi acheter les deux côtés coûte 1,01 $."],
-["Sur un marché, le volume bondit et l'intérêt ouvert grimpe fortement. Que faut-il soupçonner ?",["Rien, ce sont deux mesures identiques","De l'argent frais entre, parfois celui d'un seul gros trader : le mouvement de prix peut venir de l'argent plutôt que de l'information","Le marché va être annulé","Le spread est forcément nul"],1,"Un pic de volume signale souvent une nouvelle information ; un intérêt ouvert qui monte signale de nouvelles positions. Lus ensemble, ils séparent un mouvement d'information d'un mouvement d'argent. Et un spread large signale un marché peu liquide."],
-["Quand un teneur de marché automatisé (AMM) vaut-il mieux qu'un carnet d'ordres, et qui paie ?",["Toujours ; personne ne paie","Sur un marché peu liquide, car il cote toujours un prix ; les fournisseurs de liquidité ou le sponsor absorbent les pertes face aux traders informés","Sur un marché très liquide ; les traders paient","Jamais ; c'est interdit"],1,"« Une rue pleine veut un carnet d'ordres, une rue vide a besoin d'un commerçant. » Le LMSR de Hanson est financé par la subvention d'un sponsor."],
-["Lequel N'EST PAS un risque d'une plateforme de prédiction centralisée ?",["Le gel ou le retard des retraits","La plateforme décide seule du résultat","La blockchain ne connaît pas le monde réel","Les restrictions selon le pays"],2,"Le problème de l'oracle concerne les marchés décentralisés. Les plateformes centralisées posent des risques de contrepartie, de retrait, de règlement opaque, de barrières géographiques et de cotation."],
-["Dans le cycle de vie d'un marché décentralisé, quand l'oracle intervient-il ?",["À la création du marché","Pendant les échanges","À la résolution, après l'événement, suivi d'une période de contestation","Jamais, le contrat devine le résultat"],2,"Création → négociation → résolution (rapport de l'oracle, période de contestation, escalade si litige) → règlement et paiement par le contrat intelligent."],
-["Pourquoi les marchés décentralisés règlent-ils en stablecoins (USDC) ?",["C'est imposé par la CFTC","Pour que le prix d'un jeton de résultat ne reflète que la probabilité, pas la volatilité d'une crypto","Parce que l'ETH n'existe pas sur Polygon","Pour payer moins d'impôts"],1,"Avec de l'ETH en collatéral, un pari gagnant pourrait être effacé par une chute de l'ETH. L'USDC isole l'information de la volatilité."],
-["Sur Polymarket, un résultat proposé est contesté une première puis une seconde fois. Que se passe-t-il ?",["Le marché est annulé et remboursé","Polymarket tranche seul","La résolution passe au vote des détenteurs du jeton UMA, qui ont le dernier mot","Le premier proposant gagne d'office"],2,"Oracle optimiste : proposition avec caution, fenêtre de contestation, deux contestations maximum, puis vote UMA. Un système in fine ploutocratique, comme dans l'affaire MicroStrategy de mai 2026."],
-["Un oracle annonce le mauvais résultat et personne ne conteste. Que se passe-t-il ?",["Le contrat détecte l'erreur et annule","Le contrat paie les mauvais gagnants ; les vrais gagnants perdent, sans recours","La plateforme rembourse tout le monde","Le marché reste ouvert indéfiniment"],1,"Le contrat exécute ce que dit l'oracle. C'est pourquoi la compromission de l'oracle est un point de défaillance unique."],
-["Polymarket face à Kalshi : quelle affirmation est juste ?",["Kalshi règle en USDC sur blockchain","Polymarket : USDC, accès pseudonyme mondial, oracle avec contestation ; Kalshi : dollars, KYC, régulé par la CFTC, résolution par la plateforme","Les deux exigent un KYC","Polymarket est régulé par la CFTC depuis 2020"],1,"Kalshi est la bourse centralisée réglementée ; Polymarket est l'infrastructure décentralisée. La création de marché coûte une caution d'environ 750 USDC chez Polymarket."],
-["Comment fonctionne techniquement Polymarket ?",["Tout se passe on-chain, y compris le carnet d'ordres","Hybride : carnet d'ordres (CLOB) hors chaîne, fonds et règlement on-chain","Tout est centralisé comme une banque","Il n'y a pas de carnet d'ordres, seulement un AMM"],1,"Hors chaîne pour la vitesse et la gratuité des ordres ; on-chain (Polygon) pour l'auto-conservation des fonds et un règlement vérifiable."],
-["Sur Polymarket, quand tu cliques « acheter », que crée ton navigateur ?",["Une transaction Ethereum payée en gas","Un ordre signé avec ta clé privée (EIP-712) envoyé au carnet d'ordres, qui vérifie signature et fonds","Un e-mail au support","Un NFT"],1,"L'ordre n'est pas une transaction blockchain : c'est une instruction signée (jeton, sens, prix, taille, expiration). Tous les ordres sont en réalité des ordres limités ; un « ordre au marché » est un limité exécutable tout de suite."],
-["Fin octobre 2026, des comptes Polymarket ont été vidés. Comment ?",["Les contrats intelligents avaient un bug","L'oracle UMA a été corrompu","Un script tiers du site web, compromis via son DNS, a utilisé les autorisations déjà données par les utilisateurs connectés","Les clés privées ont été volées sur Polygon"],2,"Ni la blockchain, ni l'oracle, ni les contrats n'ont été percés : le site web est un point faible centralisé. On peut d'ailleurs interagir directement avec le protocole sans passer par le site."],
-["Affaire Maduro (janvier 2026) : qu'est-ce qui a fait soupçonner un délit d'initié sur Polymarket ?",["Des comptes créés juste avant, ne pariant que sur le Venezuela, avec un sans-faute","Le prix est resté à 50 %","Kalshi a annulé le marché","Les volumes étaient nuls"],0,"Probabilité à ~9 % au début de l'opération, plus de 400 000 $ gagnés par un compte, 9 800 $ devenus 133 000 $ pour six portefeuilles. Le pseudonymat rend ce type d'abus difficile à poursuivre."]
-]},
-{id:"s7",title:"La géopolitique des cryptomonnaies",src:"Session 7 · cours de Garrick Hileman et 7 articles de recherche",qs:[
-["Selon Garrick Hileman, sous quelle forme une crypto aurait-elle le plus de poids géopolitique ?", ["Comme « or numérique » détenu en réserve", "Comme vraie monnaie : une unité de compte et un réseau de paiement intégrés, à la manière du dollar plus Visa", "Comme jeton de gouvernance", "Comme NFT de collection"], 1, "Un actif de réserve pèse peu. Une monnaie qui combine l'unité (le dollar) et le réseau (Visa, SWIFT) dans un même système toucherait au cœur du pouvoir monétaire des États."],
-["Qui crée l'essentiel de la monnaie en circulation aujourd'hui ?", ["Les banques centrales, en imprimant des billets", "Les gouvernements, par l'impôt", "Les banques commerciales, en accordant des prêts", "Les mineurs de bitcoin"], 2, "Quand une banque accorde un crédit immobilier ou un prêt auto, elle crée de la monnaie. La part émise par les banques centrales est souvent inférieure à 10 % : la monnaie est déjà surtout privée, comme Bitcoin."],
-["Dans la vue « emboîtée » des trois fonctions de la monnaie, laquelle est au cœur, donc la plus difficile à atteindre ?", ["La réserve de valeur", "Le moyen d'échange", "L'unité de compte", "La spéculation"], 2, "Réserve de valeur (cercle le plus large), puis moyen d'échange, puis unité de compte au centre. Bitcoin en est surtout à la première étape."],
-["D'après Nick Szabo, pourquoi Bitcoin restera-t-il plus volatil qu'une monnaie de banque centrale ?", ["Parce que ses exchanges manquent de liquidité", "Parce que la spéculation reflète une incertitude réelle sur son avenir, que plus de liquidité ne réduit pas", "Parce que son offre est illimitée", "Parce que les mineurs vendent chaque jour"], 1, "La volatilité vient de l'incertitude sur le rôle futur de Bitcoin. De meilleurs mécanismes de liquidité ne suppriment pas cette incertitude-là."],
-["Selon Hileman, quel est peut-être le plus grand obstacle pour qu'une crypto devienne un moyen d'échange ?", ["Les frais de minage", "Presque personne n'est payé en crypto : sans salaires, les commerçants ne l'acceptent pas, et inversement", "Le manque d'exchanges", "L'absence de portefeuilles mobiles"], 1, "C'est le problème de l'œuf et de la poule, toujours pas résolu 16 ans après Bitcoin. Les stablecoins pourraient aider à le débloquer."],
-["Le 3 avril 2025, au lendemain des droits de douane massifs américains, quelle question Hileman juge-t-il clé ?", ["Le prochain halving", "L'indépendance de la Fed : prêtera-t-elle encore des dollars (lignes de swap) aux banques centrales étrangères en crise ?", "La date des ETF ether", "Le prix de l'or en euros"], 1, "En crise, la BCE ou la Banque du Japon appellent la Fed de New York pour emprunter des dollars. Si la Fed limitait cet accès pour renforcer la position de négociation de la Maison-Blanche, le dollar deviendrait une arme. Lecture conseillée : Secrets of the Temple, de William Greider."],
-["Pourquoi la concentration de la détention de bitcoin est-elle un problème pour en faire une monnaie ?", ["Elle fait baisser les frais", "Une monnaie doit être largement répartie ; si l'État américain, Saylor ou BlackRock en détiennent de plus en plus, elle sert moins comme monnaie", "Elle accélère les blocs", "Elle n'a aucun effet"], 1, "Une monnaie utile circule entre beaucoup de mains. Satoshi seul détiendrait environ 5 % des BTC, autre facteur de concentration."],
-["D'après Foley, Karlsen et Putniņš (« Sex, Drugs and Bitcoin »), quelle part des transactions bitcoin était liée à une activité illégale ?", ["Environ 1 %", "Environ 10 %", "Environ 46 %, soit près de 76 milliards de dollars par an", "Plus de 90 %"], 2, "Environ un quart des utilisateurs et 46 % des transactions, l'ordre de grandeur des marchés de la drogue aux États-Unis et en Europe. Des chiffres d'une période ancienne (jusqu'à 2017) : la part a baissé depuis."],
-["Toujours selon « Sex, Drugs and Bitcoin », qu'est-ce qui fait baisser la part illégale de l'activité bitcoin ?", ["La hausse des frais de transaction", "L'intérêt du grand public et l'arrivée de cryptos plus opaques comme Monero", "Le halving", "Les ETF"], 1, "Plus Bitcoin devient grand public, plus la part légale grossit. Et les utilisateurs illégaux migrent vers Monero, Dash ou Zcash, plus difficiles à tracer."],
-["« Coins for Bombs » : où se concentre le volume anormal de bitcoins avant les grands attentats ?", ["Sur les exchanges régulés aux États-Unis", "Sur les exchanges non régulés et les services de mixage", "Sur les marchés de NFT", "Sur Lightning"], 1, "+9,53 % de volume anormal cumulé avant l'attaque, puis −7,33 % après. Les fonds transitent par des plateformes sans KYC et des mixeurs pour être blanchis jusqu'aux opérateurs. Leçon : le registre public permet de détecter et même prédire certains financements illicites (un jour avant)."],
-["Hileman oppose l'or et Bitcoin face au risque quantique. Pourquoi ?", ["L'or peut être piraté", "L'or est protégé par les lois de la physique, Bitcoin par les mathématiques : une cryptographie cassée serait fatale à court terme", "Bitcoin est déjà résistant au quantique", "Ils sont exposés de la même façon"], 1, "D'où le débat sur des forks pour protéger les pièces de Satoshi ou les brûler. Beaucoup misent sur la cryptographie post-quantique, mais rien n'est garanti."],
-["« Digital Gold and geopolitics » (Selmi et al.) : comment Bitcoin et l'or réagissent-ils au risque géopolitique ?", ["Ils baissent toujours", "Ils montent quand le risque est élevé, mais l'effet dépend du type de risque", "Seul l'or réagit", "Seul Bitcoin réagit"], 1, "Avec un indice composite de 7 risques (Chine-USA, guerres commerciales, Golfe, Europe, Corée du Nord, Russie-OTAN, terrorisme), les deux réagissent positivement en régime de risque élevé. Mais la volatilité et la spéculation empêchent Bitcoin d'être une valeur refuge établie."],
-["« Flight to cryptos » : qu'arrive-t-il au trading crypto quand l'UE inclut explicitement les services crypto dans ses sanctions contre la Russie ?", ["Il explose", "Il ralentit, du moins sur les exchanges centralisés étudiés", "Il ne change pas", "Il passe entièrement sur Bitcoin"], 1, "Les sanctions mordent là où une plateforme garde les fonds (CEX). L'étude ne couvre pas les DEX, où ces sanctions s'appliquent beaucoup moins facilement."],
-["Pourquoi les États-Unis ont-ils pris de l'avance sur la Chine pour adopter Bitcoin, selon Hileman ?", ["La Chine n'a pas de mineurs", "Un actif ouvert, décentralisé et détenu sans tiers convient mieux à une société ouverte ; il peut servir de « boulet de démolition » contre un système financier contrôlé", "Parce que Bitcoin est une entreprise américaine", "Parce que la Chine a déjà une CBDC en bitcoin"], 1, "En 2016, Hileman pensait que la Banque populaire de Chine pourrait l'adopter. Ce sont finalement les États-Unis qui ont annoncé une réserve en bitcoin, alimentée par les BTC saisis à des criminels."],
-["Après l'invasion de l'Ukraine, quel comportement on-chain l'étude « Stablecoins as Digital Havens » observe-t-elle en Russie ?", ["Du trading rapide d'USDT sur les exchanges", "Plus d'USDT dans de petites adresses, de l'accumulation et des retraits hors des exchanges", "Une fuite vers les NFT", "Un décrochage d'USDT sous 0,90 $"], 1, "Les particuliers épargnent en dollar numérique et sortent leurs fonds des plateformes, par peur qu'elles soient touchées par les sanctions. USDT a tenu son ancrage malgré la demande. Contexte : environ 350 milliards de dollars (70 %) des actifs de la banque centrale russe gelés, banques exclues de SWIFT."],
-["Quelle erreur Hileman attribue-t-il en partie à Hayek (« Denationalisation of Money ») ?", ["Hayek croyait que seuls les États peuvent créer de la monnaie", "Hayek pensait que la monnaie privée la plus stable gagnerait, alors que beaucoup préfèrent détenir ce qui peut monter", "Hayek avait prédit l'or numérique", "Hayek refusait toute concurrence monétaire"], 1, "Hayek a anticipé la concurrence des monnaies privées. Mais le leader, Bitcoin, est tout sauf stable : sa rareté et son potentiel de hausse l'avantagent face aux stablecoins."],
-["Comment est construit l'indice d'incertitude crypto UCRY (Lucey et al.) ?", ["À partir des prix des options", "À partir de 726,9 millions d'articles de presse (LexisNexis), en deux volets : politique (Policy) et prix (Price)", "À partir des votes des mineurs", "À partir des comptes Twitter"], 1, "Il compte les articles qui associent crypto et incertitude. Incertitude n'est pas volatilité : elle bouge moins souvent, mais ses mouvements durent plus longtemps."],
-["« Distrust or speculation? » (Auer, BRI) : pourquoi les Américains achètent-ils des cryptos ?", ["Par méfiance envers les banques et le dollar", "Surtout par spéculation : ils ne sont pas plus méfiants que la moyenne envers le cash ou les banques", "Pour payer leurs courses", "Pour échapper à l'impôt"], 1, "Les détenteurs sont plutôt jeunes, diplômés, natifs du numérique et masculins. Le récit « crypto contre le système » ne se vérifie pas dans les données américaines."],
-["Que retient Hileman de l'histoire des monnaies alternatives (Wörgl, beenz, flooz…) ?", ["Elles ont presque toutes réussi", "La grande majorité meurt vite, rarement à cause des régulateurs", "Elles ont toutes été interdites", "Elles sont devenues des monnaies nationales"], 1, "Bitcoin fait figure d'exception par sa durée. Certaines ont été interdites, comme la monnaie fondante de Wörgl en Autriche (1932), mais la plupart s'éteignent d'elles-mêmes."],
-["Quel moteur Hileman juge-t-il le plus prometteur pour faire de Bitcoin une monnaie ?", ["Les cartes bancaires crypto", "L'économie machine-à-machine : IA et robots ont besoin d'une monnaie numérique, programmable et sans gardien", "Les distributeurs de billets", "Le retour à l'étalon-or"], 1, "Comme on utilise l'euro en Europe, on utiliserait « la monnaie du royaume » des machines. Son usage pourrait ensuite déborder vers les humains, jusqu'aux salaires."]
-]},
-{id:"s8",title:"Tokenisation et stablecoins",src:"Session 8 · support PDF, tutoriel RWA.xyz, cours préenregistré et Q&R avec Ripple",qs:[
-["Qu'est-ce que la tokenisation ?", ["Convertir des cryptos en euros", "Créer sur la blockchain une représentation d'un actif réel ou financier qui n'y est pas né", "Découper un bitcoin en satoshis", "Miner un nouveau jeton"], 1, "Un dollar, une obligation ou un immeuble reçoit un jeton qui le représente sur la chaîne. Le jeton adossé au dollar reste l'exemple le plus courant."],
-["Dans le schéma classique de la tokenisation, quelles sont les trois étapes ?", ["Minage, validation, finalisation", "Garde de l'actif par un dépositaire, émission du jeton, rachat contre l'actif", "Achat, staking, revente", "Audit, cotation, introduction en bourse"], 1, "Le dépositaire prend le contrôle de l'actif, émet le jeton, et peut le racheter à un taux fixe, souvent 1 pour 1."],
-["Sur quel marché un détenteur revend-il ses jetons à un autre détenteur ?", ["Le marché primaire", "Le marché secondaire", "Le marché monétaire", "Le marché de gré à gré de la banque centrale"], 1, "Le marché primaire relie le dépositaire et le détenteur (émission, rachat). Les échanges entre détenteurs forment le marché secondaire."],
-["Quel est le principal piège de la tokenisation d'un immeuble ?", ["Le jeton ne peut pas être transféré", "Le jeton vit sur un réseau décentralisé, mais l'immeuble dépend d'un dépositaire : on doit lui refaire confiance", "La blockchain ne peut pas stocker de prix", "Les frais de gas dépassent le prix de l'immeuble"], 1, "La centralisation revient par la porte de derrière. La blockchain prouve que tu as le jeton, pas que le dépositaire honorera ta part."],
-["Pourquoi un actif tokenisé peut-il rester peu liquide ?", ["Parce que les jetons expirent", "Parce qu'il faut des acheteurs : marchés fragmentés, accès restreint et évaluation difficile gardent le marché mince", "Parce que la blockchain limite les ventes à une par jour", "Parce que les stablecoins sont interdits"], 1, "Rendre un actif échangeable ne crée pas d'acheteurs. Le FT décrit l'immobilier fractionné comme un marché naissant, de niche et en difficulté."],
-["En 2026, quel est de loin le plus gros actif tokenisé ?", ["Les bons du Trésor américain", "L'immobilier", "Les stablecoins, avec environ 302,9 milliards de dollars", "L'or"], 2, "Hors stablecoins, les actifs réels tokenisés pèsent 38,8 milliards. Les stablecoins écrasent toutes les autres catégories."],
-["Qu'est-ce que BUIDL ?", ["Le stablecoin de Ripple", "Le fonds tokenisé de bons du Trésor américain de BlackRock, réservé aux institutions", "Un protocole de prêt DeFi", "La CBDC chinoise"], 1, "Jeton à 1 $ qui verse un rendement, premier fonds tokenisé de Trésor à dépasser 1 milliard (mars 2025), environ 2,8 milliards en août 2026. Il passe par Securitize."],
-["Pourquoi BUIDL ne compte-t-il que quelques dizaines de détenteurs ?", ["Parce que son jeton coûte 1 million de dollars", "Parce qu'il est permissionné : seuls des investisseurs institutionnels vérifiés peuvent y accéder", "Parce qu'il vient d'être lancé", "Parce qu'il est sur une blockchain privée sans portefeuilles"], 1, "Le tutoriel RWA.xyz le confirme : pour les bons du Trésor tokenisés, il faut en général être vérifié, d'où peu de détenteurs."],
-["Quelle fonction de la monnaie une crypto volatile rate-t-elle d'abord ?", ["La divisibilité", "L'unité de compte : personne ne fixe ses prix dans une monnaie qui bouge sans cesse", "La transportabilité", "La résistance à la contrefaçon"], 1, "Les cryptos sont durables, divisibles, fongibles et infalsifiables. C'est la stabilité qui leur manque pour être une bonne monnaie."],
-["Que garde stable un stablecoin adossé au dollar ?", ["Son pouvoir d'achat", "Son prix exprimé en dollars", "Le prix du bitcoin", "Le taux de la Fed"], 1, "Le dollar lui-même a perdu l'essentiel de son pouvoir d'achat au XXe siècle. La stabilité est relative."],
-["Comment fonctionne USDT ?", ["Il est surgaranti par de l'ETH", "On dépose 1 $ chez Tether, qui émet 1 USDT, rachetable 1 $ à tout moment", "Un algorithme crée et détruit un jeton action", "Il est émis par la Fed"], 1, "Garantie exogène et centralisée : il faut croire que Tether détient les réserves et honorera les rachats."],
-["Avec 150 $ d'ETH bloqués dans un coffre Maker, combien de DAI Alice peut-elle émettre au maximum dans l'exemple du cours ?", ["150 DAI", "100 DAI", "300 DAI", "50 DAI"], 1, "Le DAI est surgaranti : on bloque plus de valeur qu'on emprunte. C'est son inefficacité en capital."],
-["Le « Jeudi noir » de mars 2020, que fait le DAI ?", ["Il tombe à 0,50 $", "Il passe au-dessus de 1 $", "Il disparaît", "Il reste parfaitement à 1 $"], 1, "L'ETH perd environ 50 % en un jour. Tout le monde veut du DAI (refuge, remboursements), mais en créer exige de bloquer de l'ETH effondré : pénurie, prix au-dessus de 1 $."],
-["Quel était le défaut de conception du DAI révélé en mars 2020 ?", ["Ses contrats avaient une faille", "Son offre dépendait d'une garantie volatile et de l'envie de levier, pas de la demande de DAI", "Il était garanti par des dollars", "Il n'avait pas d'oracle"], 1, "Le DAI naît des emprunteurs qui veulent du levier, pas de ceux qui veulent le garder."],
-["Un stablecoin algorithmique vaut 0,90 $. Que fait l'arbitragiste ?", ["Il crée de nouveaux stablecoins", "Il achète le stablecoin à 0,90 $ et le détruit contre 1 $ de jeton action : moins d'offre, le prix remonte", "Il attend", "Il le vend à découvert à la banque centrale"], 1, "À 1,10 $, il fait l'inverse : il détruit 1 $ de jeton action pour créer un stablecoin et le vendre 1,10 $."],
-["Pourquoi UST et Luna se sont-ils effondrés ensemble en 2022 ?", ["Une faille de sécurité a vidé les réserves en dollars", "Pour défendre UST, le protocole a émis énormément de Luna, dont le prix s'est effondré : spirale", "La SEC a interdit Terra", "Les mineurs ont arrêté de valider"], 1, "Le mécanisme ne tient que si chacun croit que les deux jetons gardent de la valeur. Le jeton action est un pari sur l'écosystème."],
-["Une CBDC de gros est destinée à qui ?", ["Aux particuliers", "Aux banques et institutions agréées, pour les règlements entre elles", "Aux touristes étrangers", "Aux mineurs"], 1, "De détail : les ménages. Universelle : aussi les étrangers."],
-["En mai 2026, où en sont les CBDC dans le monde ?", ["Aucun pays n'y travaille", "146 pays en explorent une et 3 en ont lancé une", "Tous les pays du G20 en ont lancé une", "Seule la Chine y travaille"], 1, "Selon le CBDC Tracker de l'Atlantic Council. En 2023, 94 % des banques centrales interrogées par la BRI y travaillaient."],
-["Pourquoi une CBDC peut-elle menacer les banques commerciales ?", ["Elle supprime les billets", "En crise, les épargnants peuvent vider leurs dépôts vers la monnaie la plus sûre en un clic : c'est la désintermédiation", "Elle oblige les banques à miner", "Elle interdit les prêts"], 1, "Parades : plafonds de détention, taux échelonnés, distribution par les banques, assurance des dépôts, prêt des dépôts CBDC aux banques."],
-["Qu'est-ce qui distingue un dépôt tokenisé d'un stablecoin comme USDC ?", ["Rien, ce sont des synonymes", "Il est émis par une banque régulée et couvert par ses dépôts sous le droit bancaire", "Il est émis par la banque centrale", "Il est garanti par de l'ETH"], 1, "C'est un juste milieu entre CBDC de détail et stablecoin. USDC, lui, détient un mélange de réserves (liquidités, bons du Trésor) sous des règles variables."]
-]}
-];
-
-// Mini-cours : chaque notion couvre une liste de questions (indices dans le tableau qs du niveau).
+const LEVELS=[{"id":"s1","title":"Introduction à la blockchain et au Web3","src":"Session 1 · support PDF et vidéos"},{"id":"s2","title":"Bitcoin et monnaie numérique","src":"Q&R n°2 · Garrick Hileman"},{"id":"s3","title":"Blockchains programmables : Cardano et Ethereum","src":"Q&R n°3 · John Greene, Cardano Foundation"},{"id":"s4","title":"Sécurité et confidentialité des portefeuilles","src":"Q&R n°4 · Lucien, Trezor"},{"id":"s5","title":"Finance décentralisée (DeFi)","src":"Session 5 · support PDF, tutoriels et Q&R n°5 · Luke Martinez, Avalanche Team1"},{"id":"s6","title":"Les marchés prédictifs","src":"Session 6 · support PDF, vidéo Polymarket et Q&R n°6 · Apostolos Kourtis"},{"id":"s7","title":"La géopolitique des cryptomonnaies","src":"Session 7 · cours de Garrick Hileman et 7 articles de recherche"},{"id":"s8","title":"Tokenisation et stablecoins","src":"Session 8 · support PDF, tutoriel RWA.xyz, cours préenregistré et Q&R avec Ripple"}];
 const COURSE={
 s1:[
 {t:"Registre distribué et nœuds",q:[0,4,5,11],b:"Une blockchain est un registre que des milliers d'ordinateurs, les nœuds, conservent en copie. Chaque nœud vérifie lui-même les règles et rejette ce qui est invalide. C'est ce qui règle le problème de la double dépense sans banque : tout le monde voit la même liste de transactions dans le même ordre. Une blockchain publique est ouverte à tous ; une blockchain permissionnée réserve la validation à des participants choisis.",e:"Tu envoies 1 BTC à Paul puis, une seconde après, le même BTC à Marie. Les nœuds n'accepteront qu'une seule des deux transactions dans un bloc ; l'autre sera rejetée comme double dépense.",k:"Pas de chef : la vérité, c'est ce que la majorité des nœuds honnêtes accepte selon les mêmes règles."},
@@ -362,23 +212,48 @@ s8:[
 ]
 };
 
-const KEY="chaine-quiz-v1";
-let prog={};
-try{prog=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){prog={}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(prog))}catch(e){}}
+// ===== Version communauté : comptes Supabase, correction serveur, classements =====
+const sb=window.CDQ?CDQ.sb:null;
+const SITE="https://tokenforgefan.github.io/quiz-blockchain/";
+const HUB="https://tokenforgefan.github.io/chaine-des-quiz/";
 const app=document.getElementById("app");
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function fakeHash(id,score){let h=0;const s=id+score;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;let out="";for(let i=0;i<4;i++){h=(h*1103515245+12345)>>>0;out+=h.toString(16).padStart(8,"0").slice(0,4)}return "0000"+out.slice(0,12)}
-const unlocked=i=>i===0||(prog[LEVELS[i-1].id]&&prog[LEVELS[i-1].id].passed);
-let confirmReset=false;
+const errMsg=e=>{const m=(e&&(e.message||e.error_description||e.msg))||String(e||"");
+  if(/fetch|network|Failed/i.test(m))return "Pas de connexion internet. Le quiz communautaire a besoin d'internet pour corriger tes réponses.";
+  if(/rate limit|too many/i.test(m))return "Trop de demandes d'e-mail d'un coup. Patiente quelques minutes puis réessaie.";
+  if(/duplicate|unique/i.test(m))return "Ce pseudo est déjà pris, choisis-en un autre.";
+  if(/check constraint|profiles_pseudo/i.test(m))return "Pseudo invalide : 3 à 20 caractères, lettres, chiffres, _ - . uniquement.";
+  if(/expired|invalid.*token|otp/i.test(m))return "Code incorrect ou expiré. Redemande un code.";
+  return m};
 
+let ME=null;          // {id,email,pseudo}
+let prog={};          // {s1:{best,passed}}
+let QCACHE={};        // questions par bloc (sans réponses)
+const unlocked=i=>i===0||(prog[LEVELS[i-1].id]&&prog[LEVELS[i-1].id].passed);
+
+function busy(msg){app.innerHTML=`<p class="rule" style="margin-top:40px">${esc(msg||"Chargement…")}</p>`}
+
+// ---------- Compte : géré par la page d'accueil ----------
+function login(){ location.href = CDQ.loginUrl(); }
+async function afterAuth(){
+  ME = await CDQ.me();
+  if(ME && !ME.pseudo){ ME = null; return login(); }
+  await loadProgress(); home();
+}
+async function loadProgress(){prog={};if(!ME)return;
+  const{data}=await sb.rpc("my_progress");(data||[]).forEach(r=>prog[r.level_id]={best:+r.best,passed:r.passed})}
+
+// ---------- La chaîne ----------
 function home(){
   const done=LEVELS.filter(l=>prog[l.id]&&prog[l.id].passed).length;
-  let h=`<h1>La Chaîne des Quiz</h1>
-  <p class="lede">Testez vos connaissances sur la blockchain et les actifs numériques à travers un quiz interactif et ludique. Découvrez les concepts clés, les cryptomonnaies, les NFT et les enjeux de cette nouvelle révolution numérique ! Chaque session est un bloc : suis d'abord son cours, puis passe le test pour le miner et débloquer le suivant.</p>
-  <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> (plus de 14) pour passer · ${done}/${LEVELS.length} blocs minés</p>
+  CDQ.menu("quiz");
+  let h=`<h1>Quiz à niveaux · Blockchain</h1>
+  <p class="lede">Testez vos connaissances sur la blockchain et les actifs numériques. Chaque session est un bloc : suis d'abord son cours, puis passe le test pour le miner et débloquer le suivant. Grimpe dans le classement de la communauté !</p>
+  <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> pour passer · ${done}/${LEVELS.length} blocs minés</p>
   <p class="rule">Points négatifs : bonne réponse <b>+1</b> · mauvaise réponse <b>−0,5</b> · question passée <b>0</b>. Dans le doute, mieux vaut passer.</p>
+  ${ME&&ME.pseudo?"":`<p class="note">👉 Les cours sont ouverts à tous. Pour passer les tests et entrer dans le classement, <a href="${CDQ.loginUrl()}">connecte-toi avec ton e-mail</a>.</p>`}
   <div class="chain">`;
   LEVELS.forEach((l,i)=>{
     const p=prog[l.id], open=unlocked(i), mined=p&&p.passed;
@@ -388,16 +263,12 @@ function home(){
     let meta=mined?`hash ${fakeHash(l.id,p.best)} · meilleur score ${fmt(p.best)}/20`:open?(p?`meilleur score ${fmt(p.best)}/20 · encore ${fmt(PASS-p.best)} point${PASS-p.best>1?"s":""} à gagner`:l.src):`Réussis le bloc ${i} pour déverrouiller`;
     h+=`<div class="block ${cls}"><div class="num">${String(i+1).padStart(2,"0")}</div><div class="info">
       <h2>${esc(l.title)}</h2><div class="meta">${esc(meta)}</div>
-      <div class="row">${chip}${open?`<button class="${mined||p?"ghost":"btn"}" data-learn="${i}">${p?"Revoir le cours":"1. Suivre le cours"}</button><button class="${mined||!p?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer le test":p?"Retenter le test":"2. Passer le test"}</button>`:""}</div></div></div>`;
+      <div class="row">${chip}<button class="${mined||p?"ghost":"btn"}" data-learn="${i}">${p?"Revoir le cours":"1. Suivre le cours"}</button>${open?`<button class="${mined||!p?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer le test":p?"Retenter le test":"2. Passer le test"}</button>`:""}</div></div></div>`;
   });
-  h+=`</div><div class="foot"><span>Ta progression est gardée dans ce navigateur.</span>
-  <span class="confirm">${confirmReset?`Tout effacer ? <button class="ghost" id="yes">Oui, effacer</button><button class="ghost" id="no">Annuler</button>`:`<button class="ghost" id="reset">Réinitialiser</button>`}</span></div>`;
+  h+=`</div><div class="foot"><span>Sur tablette : menu du navigateur → « Ajouter à l'écran d'accueil ».</span><a href="https://tokenforgefan.github.io/Arcade-blockchain/">🎮 Arcade-Blockchain</a></div>`;
   app.innerHTML=h;
   app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>start(+b.dataset.go));
   app.querySelectorAll("[data-learn]").forEach(b=>b.onclick=()=>lesson(+b.dataset.learn));
-  const r=document.getElementById("reset");if(r)r.onclick=()=>{confirmReset=true;home()};
-  const y=document.getElementById("yes");if(y)y.onclick=()=>{prog={};save();confirmReset=false;home()};
-  const n=document.getElementById("no");if(n)n.onclick=()=>{confirmReset=false;home()};
 }
 
 function lesson(i){
@@ -412,34 +283,45 @@ function lesson(i){
   document.getElementById("quit").onclick=home;
   document.getElementById("go").onclick=()=>start(i);
 }
+
+// ---------- Partie (corrigée par le serveur) ----------
 let S=null;
-function start(i){
-  const l=LEVELS[i];
-  const qs=shuffle(l.qs.map((q,ix)=>[q,ix])).slice(0,TOTAL).map(([q,ix])=>{const order=shuffle([0,1,2,3]);return{q:q[0],o:order.map(k=>q[1][k]),a:order.indexOf(q[2]),e:q[3],ix}});
-  S={i,qs,n:0,score:0,good:0,bad:0,skip:0,miss:[]};
-  ask();window.scrollTo(0,0);
+async function start(i){
+  if(!ME||!ME.pseudo)return login();
+  if(!unlocked(i))return home();
+  const l=LEVELS[i];busy("Préparation du bloc…");
+  try{
+    if(!QCACHE[l.id]){const{data,error}=await sb.rpc("get_questions",{p_level:l.id});if(error)throw error;QCACHE[l.id]=data}
+    const{data:att,error}=await sb.rpc("start_attempt",{p_level:l.id});if(error)throw error;
+    const qs=shuffle(QCACHE[l.id]).slice(0,TOTAL).map(q=>{const order=shuffle(q.options.map((_,k)=>k));return{q:q.prompt,o:order.map(k=>q.options[k]),order,ix:q.idx}});
+    S={i,att,qs,n:0,score:0,good:0,bad:0,skip:0,miss:[]};ask();window.scrollTo(0,0);
+  }catch(e){app.innerHTML=`<p class="msg">${esc(errMsg(e))}</p><button class="btn" id="b">← Chaîne</button>`;document.getElementById("b").onclick=home}
 }
 function ask(){
-  const l=LEVELS[S.i],q=S.qs[S.n];
-  app.innerHTML=`<div class="top"><button class="ghost" id="quit">← Quitter</button><span class="qnum">Bloc ${S.i+1} · Question ${S.n+1}/${TOTAL} · ${fmt(S.score)} pt${Math.abs(S.score)>1?"s":""}</span></div>
-  <div class="bar"><i style="width:${S.n/TOTAL*100}%"></i></div>
+  const q=S.qs[S.n];
+  app.innerHTML=`<div class="top"><button class="ghost" id="quit">← Quitter</button><span class="qnum">Bloc ${S.i+1} · Question ${S.n+1}/${S.qs.length} · ${fmt(S.score)} pt${Math.abs(S.score)>1?"s":""}</span></div>
+  <div class="bar"><i style="width:${S.n/S.qs.length*100}%"></i></div>
   <p class="q">${esc(q.q)}</p>
-  <div class="opts">${q.o.map((t,k)=>`<button class="opt" data-k="${k}"><span class="k">${"ABCD"[k]}</span><span>${esc(t)}</span></button>`).join("")}</div>
+  <div class="opts">${q.o.map((t,k)=>`<button class="opt" data-k="${k}"><span class="k">${"ABCDEF"[k]}</span><span>${esc(t)}</span></button>`).join("")}</div>
   <div class="next" style="justify-content:flex-start"><button class="ghost" id="skip">Je ne sais pas, passer (0 point)</button></div>
   <div id="fb"></div>`;
-  document.getElementById("quit").onclick=home;
+  document.getElementById("quit").onclick=()=>{S=null;home()};
   document.getElementById("skip").onclick=()=>answer(-1);
   app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(+b.dataset.k));
-  app.querySelector(".opt").focus({preventScroll:true});
 }
-function answer(k){
-  const q=S.qs[S.n],ok=k===q.a,skipped=k<0;
+async function answer(k){
+  const q=S.qs[S.n],skipped=k<0;
+  app.querySelectorAll(".opt,#skip").forEach(b=>b.disabled=true);
+  let r;
+  try{const{data,error}=await sb.rpc("answer_question",{p_attempt:S.att,p_idx:q.ix,p_choice:skipped?null:q.order[k]});if(error)throw error;r=data}
+  catch(e){document.getElementById("fb").innerHTML=`<p class="msg">${esc(errMsg(e))}</p><div class="next"><button class="btn" id="re">Réessayer</button></div>`;
+    document.getElementById("re").onclick=()=>{app.querySelectorAll(".opt,#skip").forEach(b=>b.disabled=false);document.getElementById("fb").innerHTML=""};return}
+  const right=q.order.indexOf(r.answer),ok=r.ok;q.a=right;q.e=r.explanation;
   if(ok){S.score+=PTS_OK;S.good++}else if(skipped){S.skip++;S.miss.push({...q,you:null})}else{S.score+=PTS_KO;S.bad++;S.miss.push({...q,you:q.o[k]})}
-  app.querySelectorAll(".opt").forEach((b,j)=>{b.disabled=true;if(j===q.a)b.classList.add("right");else if(j===k)b.classList.add("wrong")});
-  document.getElementById("skip").disabled=true;
-  const last=S.n===TOTAL-1;
+  app.querySelectorAll(".opt").forEach((b,j)=>{if(j===right)b.classList.add("right");else if(j===k)b.classList.add("wrong")});
+  const last=S.n===S.qs.length-1;
   const head=ok?"Bonne réponse · +1":skipped?"Question passée · 0 point":"Mauvaise réponse · −0,5";
-  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"ko"}"><strong>${head}</strong>${esc(q.e)}</div>
+  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"ko"}"><strong>${head}</strong>${esc(r.explanation)}</div>
   <div class="next"><button class="btn" id="nx">${last?"Voir mon score":"Question suivante →"}</button></div>`;
   const nx=document.getElementById("nx");nx.focus();
   nx.onclick=()=>{if(last)finish();else{S.n++;ask()}};
@@ -447,38 +329,64 @@ function answer(k){
 function courseHTML(id,miss){
   if(!miss.length)return `<div class="course"><h2>Mini-cours</h2><p>Aucune erreur ni question passée : rien à revoir sur ce bloc.</p></div>`;
   const groups=(COURSE[id]||[]).map(n=>({n,items:miss.filter(m=>n.q.includes(m.ix))})).filter(g=>g.items.length).sort((a,b)=>b.items.length-a.items.length);
-  let h=`<div class="course"><h2>Mini-cours sur tes erreurs</h2><p>${groups.length} notion${groups.length>1?"s":""} à revoir, de la plus ratée à la moins ratée. Lis la leçon, puis vérifie tes questions en dessous.</p>`;
-  groups.forEach(g=>{
-    const c=g.items.length;
+  let h=`<div class="course"><h2>Mini-cours sur tes erreurs</h2><p>${groups.length} notion${groups.length>1?"s":""} à revoir, de la plus ratée à la moins ratée.</p>`;
+  groups.forEach(g=>{const c=g.items.length;
     h+=`<section class="lesson"><span class="cnt">${c} question${c>1?"s":""} ratée${c>1?"s":""} ou passée${c>1?"s":""}</span><h3>${esc(g.n.t)}</h3>
-    <p>${esc(g.n.b)}</p>
-    <p class="ex"><b>Exemple concret</b>${esc(g.n.e)}</p>
-    <p class="key"><b>À retenir</b>${esc(g.n.k)}</p>
-    <details><summary>Tes questions sur cette notion (${c})</summary><div class="qa">${g.items.map(m=>`<div><p>${esc(m.q)}</p>${m.you?`<p class="you">Ta réponse : ${esc(m.you)}</p>`:`<p class="you">Question passée</p>`}<p class="a">Bonne réponse : ${esc(m.o[m.a])}</p></div>`).join("")}</div></details></section>`;
-  });
+    <p>${esc(g.n.b)}</p><p class="ex"><b>Exemple concret</b>${esc(g.n.e)}</p><p class="key"><b>À retenir</b>${esc(g.n.k)}</p>
+    <details><summary>Tes questions sur cette notion (${c})</summary><div class="qa">${g.items.map(m=>`<div><p>${esc(m.q)}</p>${m.you?`<p class="you">Ta réponse : ${esc(m.you)}</p>`:`<p class="you">Question passée</p>`}<p class="a">Bonne réponse : ${esc(m.o[m.a])}</p></div>`).join("")}</div></details></section>`});
   return h+`</div>`;
 }
-function finish(){
-  const l=LEVELS[S.i],final=Math.max(0,S.score),pass=final>=PASS,p=prog[l.id]||{best:0,passed:false};
-  p.best=Math.max(p.best,final);p.passed=p.passed||pass;prog[l.id]=p;save();
+async function finish(){
+  const l=LEVELS[S.i];busy("Calcul du score par le serveur…");
+  let r;try{const{data,error}=await sb.rpc("finish_attempt",{p_attempt:S.att});if(error)throw error;r=data}
+  catch(e){app.innerHTML=`<p class="msg">${esc(errMsg(e))}</p><button class="btn" id="re">Réessayer</button>`;document.getElementById("re").onclick=finish;return}
+  const final=+r.score,pass=r.passed;await loadProgress();
   const nextOpen=pass&&S.i+1<LEVELS.length,gap=PASS-final;
   let h=`<div class="top"><span class="qnum">Bloc ${S.i+1} · ${esc(l.title)}</span></div>
   <div style="margin-top:24px" class="score">${fmt(final)}<small>/20</small></div>
-  <p class="qnum" style="margin:10px 0 0">${S.good} bonne${S.good>1?"s":""} (+${S.good}) · ${S.bad} fausse${S.bad>1?"s":""} (−${fmt(S.bad*0.5)}) · ${S.skip} passée${S.skip>1?"s":""}</p>
+  <p class="qnum" style="margin:10px 0 0">${r.correct} bonne${r.correct>1?"s":""} (+${r.correct}) · ${r.wrong} fausse${r.wrong>1?"s":""} (−${fmt(r.wrong*0.5)}) · ${r.skipped} passée${r.skipped>1?"s":""} · score vérifié par le serveur</p>
   <p class="verdict">${pass?(nextOpen?`Bloc miné. Le bloc ${S.i+2} est déverrouillé.`:`Bloc miné. Tu as terminé toute la chaîne disponible.`):`Il te manque ${fmt(gap)} point${gap>1?"s":""} pour miner ce bloc. Relis les corrections ci-dessous puis retente.`}</p>
-  <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="relearn">Revoir le cours</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
+  <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="share">📣 Partager mon résultat</button><button class="ghost" id="lb">🏆 Classement</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
   h+=courseHTML(l.id,S.miss);
-  if(S.miss.length)h+=`<div class="row" style="margin-top:20px">${nextOpen?`<button class="btn" id="nxt2">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again2">Retenter ce bloc</button></div>`;
   app.innerHTML=h;window.scrollTo(0,0);
-  const n2=document.getElementById("nxt2");if(n2)n2.onclick=()=>start(S.i+1);
-  const a2=document.getElementById("again2");if(a2)a2.onclick=()=>start(S.i);
-  const n=document.getElementById("nxt");if(n)n.onclick=()=>start(S.i+1);
-  document.getElementById("again").onclick=()=>start(S.i);
+  const i=S.i;
+  const n=document.getElementById("nxt");if(n)n.onclick=()=>start(i+1);
+  document.getElementById("again").onclick=()=>start(i);
   document.getElementById("map").onclick=home;
-  document.getElementById("relearn").onclick=()=>lesson(S.i);
+  document.getElementById("lb").onclick=()=>location.href=HUB+"#classement?onglet=level&bloc="+l.id;
+  document.getElementById("share").onclick=()=>shareCard(i,final,pass);
 }
-home();
-if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+
+// ---------- Carte de résultat partageable ----------
+async function shareCard(i,score,pass){
+  const l=LEVELS[i],c=document.createElement("canvas");c.width=c.height=1080;const x=c.getContext("2d");
+  const g=x.createLinearGradient(0,0,1080,1080);g.addColorStop(0,"#0f1716");g.addColorStop(1,"#2a1d06");x.fillStyle=g;x.fillRect(0,0,1080,1080);
+  x.strokeStyle="#e2a23b";x.lineWidth=6;x.strokeRect(50,50,980,980);
+  x.fillStyle="#e2a23b";x.font="700 44px system-ui,sans-serif";x.fillText("⛓ LA CHAÎNE DES QUIZ",100,160);
+  x.fillStyle="#e4ecea";x.font="500 40px system-ui,sans-serif";
+  const words=("Bloc "+(i+1)+" · "+l.title).split(" ");let line="",y=260;
+  words.forEach(w=>{if(x.measureText(line+w).width>860){x.fillText(line,100,y);line="";y+=54}line+=w+" "});x.fillText(line,100,y);
+  x.fillStyle=pass?"#5fcf94":"#f08178";x.font="800 260px system-ui,sans-serif";x.fillText(fmt(score),100,640);const sw=x.measureText(fmt(score)).width;
+  x.fillStyle="#93a3a0";x.font="600 80px system-ui,sans-serif";x.fillText("/20",120+sw,640);
+  x.fillStyle="#e4ecea";x.font="700 56px system-ui,sans-serif";x.fillText(pass?"✅ Bloc miné !":"⛏ En cours de minage…",100,780);
+  x.fillStyle="#93a3a0";x.font="500 38px system-ui,sans-serif";x.fillText("par "+(ME&&ME.pseudo||""),100,860);
+  x.fillStyle="#e2a23b";x.font="600 34px ui-monospace,monospace";x.fillText(SITE.replace("https://",""),100,960);
+  const text=`J'ai fait ${fmt(score)}/20 au bloc ${i+1} « ${l.title} » de la Chaîne des Quiz${pass?" et je l'ai miné ⛏":""}. À toi de jouer : ${SITE}`;
+  const blob=await new Promise(r=>c.toBlob(r,"image/png"));
+  const file=new File([blob],"resultat-quiz.png",{type:"image/png"});
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text});return}}catch(e){if(e.name==="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="resultat-quiz.png";a.click();
+  try{await navigator.clipboard.writeText(text);alertBox("Image téléchargée, et texte copié : colle-le avec l'image sur ton réseau.")}catch(e){alertBox("Image téléchargée.")}
+}
+function alertBox(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),4000)}
+
+// ---------- Démarrage ----------
+(async()=>{
+  if(!sb){CDQ&&CDQ.menu&&CDQ.menu("quiz");app.innerHTML=`<p class="msg">Impossible de charger le module de connexion. Vérifie ta connexion internet puis recharge la page.</p>`;return}
+  busy();
+  try{await afterAuth()}catch(e){home()}
+})();
+
 </script>
 </body>
 </html>
