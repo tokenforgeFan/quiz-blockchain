@@ -306,7 +306,7 @@ function home(){
       <h2>${esc(l.title)}</h2><div class="meta">${esc(meta)}</div>
       <div class="row">${chip}<button class="${mined||p?"ghost":"btn"}" data-learn="${i}">${p?"Revoir le cours":"1. Suivre le cours"}</button>${open?`<button class="${mined||!p?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer le test":p?"Retenter le test":"2. Passer le test"}</button>`:""}</div></div></div>`;
   });
-  h+=`</div><div class="foot"><span>Sur tablette : menu du navigateur → « Ajouter à l'écran d'accueil ».</span><a href="${ARCADE_URL}">🎮 L'Arcade du MOOC</a></div>`;
+  h+=`</div><div class="foot"><span>Sur tablette : menu du navigateur → « Ajouter à l'écran d'accueil ».</span><a href="${ARCADE_URL}">🎮 Arcade-Blockchain</a></div>`;
   app.innerHTML=h;wireNav();
   app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>start(+b.dataset.go));
   app.querySelectorAll("[data-learn]").forEach(b=>b.onclick=()=>lesson(+b.dataset.learn));
