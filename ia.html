@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Quiz IA · La Chaîne des Quiz</title>
+<meta name="theme-color" content="#5b3df5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Quiz IA">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="https://tokenforgefan.github.io/chaine-des-quiz/img/cerveau.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Layout: une chaîne verticale de blocs (niveaux) reliés par leur hash ; un bloc se « mine » en réussissant son quiz. */
+:root{
+  --bg:#f6f4ff; --surface:#ffffff; --ink:#14123b; --muted:#5c5a7a; --line:#e6e1fb;
+  --accent:#5b3df5; --accent-ink:#ffffff; --good:#17a35b; --good-bg:#e3f8ec; --bad:#d4372c; --bad-bg:#fde8e6;
+  --display:"Plus Jakarta Sans",system-ui,sans-serif; --body:"Plus Jakarta Sans",system-ui,-apple-system,Roboto,sans-serif; --mono:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0d1f; --surface:#1a1733; --ink:#ece9ff; --muted:#a7a3c9; --line:#2d2850;
+  --accent:#7c63ff; --accent-ink:#ffffff; --good:#4fd58d; --good-bg:#143425; --bad:#ff7d72; --bad-bg:#3d1c19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f0d1f; --surface:#1a1733; --ink:#ece9ff; --muted:#a7a3c9; --line:#2d2850;
+  --accent:#7c63ff; --accent-ink:#ffffff; --good:#4fd58d; --good-bg:#143425; --bad:#ff7d72; --bad-bg:#3d1c19; color-scheme:dark}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,5vw,2.1rem);line-height:1.15;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:8px 0 0;max-width:60ch}
+.rule{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-top:14px;letter-spacing:.02em}
+.rule b{color:var(--accent)}
+.chain{display:flex;flex-direction:column;margin-top:28px}
+.link{height:26px;margin-left:30px;border-left:2px dashed var(--line)}
+.link.ok{border-left:2px solid var(--accent)}
+.block{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.block.locked{opacity:.55}
+.num{width:44px;height:44px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;border:2px solid var(--line);color:var(--muted)}
+.block.mined .num{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.block.open .num{border-color:var(--accent);color:var(--accent)}
+.info{min-width:0;display:flex;flex-direction:column;gap:6px}
+.info h2{font-family:var(--display);font-weight:500;font-size:1.02rem;margin:0;line-height:1.3}
+.meta{font-family:var(--mono);font-size:.75rem;color:var(--muted);overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:4px}
+.chip{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.chip.ok{border-color:var(--good);color:var(--good);background:var(--good-bg)}
+.chip.ko{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}
+button{font:inherit;cursor:pointer;border-radius:8px}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;padding:10px 16px;font-weight:700}
+.btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);padding:9px 14px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:16px 0 22px}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.qnum{font-family:var(--mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.q{font-family:var(--display);font-weight:500;font-size:clamp(1.05rem,3.6vw,1.3rem);line-height:1.35;margin:0 0 18px;text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{text-align:left;background:var(--surface);color:var(--ink);border:1px solid var(--line);padding:13px 14px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{font-family:var(--mono);font-weight:600;color:var(--muted)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:var(--good-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.fb{margin-top:16px;padding:14px;border-radius:8px;border:1px solid var(--line);background:var(--surface)}
+.fb strong{display:block;margin-bottom:4px}
+.fb.ok strong{color:var(--good)} .fb.ko strong{color:var(--bad)}
+.next{margin-top:16px;display:flex;justify-content:flex-end}
+.score{font-family:var(--display);font-weight:700;font-size:clamp(3rem,14vw,5rem);line-height:1;font-variant-numeric:tabular-nums}
+.score small{font-size:.4em;color:var(--muted)}
+.verdict{font-size:1.1rem;margin:10px 0 20px}
+.review{display:flex;flex-direction:column;gap:12px;margin-top:22px}
+.review div{border-left:3px solid var(--bad);padding:4px 0 4px 12px}
+.review p{margin:0} .review .a{color:var(--good);font-weight:700}
+.course{margin-top:30px;display:flex;flex-direction:column;gap:16px}
+.course>h2{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0}
+.course>p{margin:0;color:var(--muted)}
+.lesson{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.lesson h3{font-family:var(--display);font-weight:500;font-size:1.05rem;margin:0;line-height:1.3}
+.lesson .cnt{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bad)}
+.lesson p{margin:0;max-width:65ch}
+.lesson .ex{border-left:3px solid var(--accent);padding-left:12px}
+.lesson .ex b,.lesson .key b{font-family:var(--mono);font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;display:block;color:var(--muted);margin-bottom:2px}
+.lesson .key{background:var(--good-bg);border-radius:8px;padding:10px 12px}
+.lesson details{border-top:1px solid var(--line);padding-top:10px}
+.lesson summary{cursor:pointer;font-weight:700;color:var(--muted)}
+.lesson .qa{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.lesson .qa div{font-size:.95rem}
+.lesson .qa .a{color:var(--good);font-weight:700}
+.lesson .qa .you{color:var(--bad)}
+.foot{margin-top:36px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+.acct{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.acct .who{font-family:var(--mono);font-size:.85rem;margin-right:auto}
+.sm{padding:6px 11px;font-size:.88rem}
+.form{display:flex;flex-direction:column;gap:12px;margin-top:20px;max-width:420px}
+.form label{display:flex;flex-direction:column;gap:6px;font-weight:600}
+.form input,.sel{font:inherit;padding:11px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.sel{width:100%;margin:8px 0}
+.msg{color:var(--bad);font-weight:600;min-height:1.2em}
+.small{font-size:.8rem;color:var(--muted);max-width:65ch}
+.note{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;margin-top:16px}
+.link-btn{background:none;border:0;padding:0;color:var(--accent);font-weight:700;text-decoration:underline}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 6px}
+.board{list-style:none;padding:0;margin:16px 0;display:flex;flex-direction:column;gap:8px}
+.board li{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.board li.me{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.board .rk{font-family:var(--mono);font-weight:700;font-size:1.1rem;text-align:center}
+.board .pn small{display:block;color:var(--muted);font-size:.78rem}
+.board .pv{font-family:var(--mono);font-weight:700;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.board .pv small{color:var(--muted);font-size:.7rem;margin-left:3px}
+.h2{font-family:var(--display);font-size:1.15rem;margin:24px 0 10px}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.badge{display:flex;gap:10px;align-items:center;border:1px dashed var(--line);border-radius:10px;padding:10px;opacity:.45;filter:grayscale(1)}
+.badge.on{opacity:1;filter:none;border-style:solid;border-color:var(--accent);background:var(--surface)}
+.badge span{font-size:1.8rem}.badge small{display:block;color:var(--muted);font-size:.78rem}
+.danger{color:var(--bad);border-color:var(--bad)}
+.foot a{color:var(--accent);font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:10px;max-width:90vw;z-index:9}
+
+/* Style La Chaîne des Quiz (violet et orange) */
+h1{font-weight:800;letter-spacing:-.03em}
+.block{border-radius:22px;padding:18px 20px;box-shadow:0 14px 34px -24px rgba(60,40,180,.4)}
+.num{border-radius:14px}
+.block.mined .num{background:linear-gradient(150deg,#7b61ff,var(--accent))}
+.btn{border-radius:999px;padding:11px 20px;box-shadow:0 10px 22px -12px var(--accent)}
+.ghost{border-radius:999px;background:var(--surface)}
+.chip{border-radius:999px}
+.opt{border-radius:16px;padding:15px 16px}
+.fb,.lesson,.note{border-radius:18px}
+.bar{height:8px}
+.bar i{background:linear-gradient(90deg,var(--accent),#ff9214)}
+.link.ok{border-left-color:var(--accent)}
+.score{background:linear-gradient(90deg,var(--accent),#ff9214);-webkit-background-clip:text;background-clip:text;color:transparent}
+.score small{-webkit-text-fill-color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://tokenforgefan.github.io/chaine-des-quiz/commun.js"></script>
+<script>
+const PASS=15, TOTAL=20, PTS_OK=1, PTS_KO=-0.5;
+const fmt=n=>String(Math.round(n*2)/2).replace(".",",");
+const LEVELS=[{"id": "ia1", "title": "Qu'est-ce que l'IA ?", "src": "Partie 1 · IA pour tous (Andrew Ng) · vocabulaire, forces et limites"}, {"id": "ia2", "title": "Mener un projet d'IA", "src": "Partie 2 · IA pour tous (Andrew Ng) · étapes, choix du projet, équipe et outils"}, {"id": "ia3", "title": "L'IA dans l'entreprise", "src": "Partie 3 · IA pour tous (Andrew Ng) · produits complexes, équipe, plan de transformation"}];
+const COURSE={
+ia1:[
+{t:"IA spécialisée et IA générale",q:[0, 1, 2],b:"Presque toute l'IA utile aujourd'hui est spécialisée (ANI) : un système, une tâche. L'IA générale (AGI), capable de tout ce qu'un humain sait faire, reste un objectif lointain. Les progrès de l'ANI sont réels et énormes ; ils ne veulent pas dire que l'AGI est proche. Le moteur de l'ANI est l'apprentissage supervisé : on montre des paires (entrée A, sortie B) et le système apprend à passer de l'une à l'autre.",e:"E-mail → spam ou pas ; audio → texte ; annonce + profil → clic ou pas ; image de la route → position des voitures.",k:"IA d'aujourd'hui = ANI = A → B. L'AGI n'existe pas encore."},
+{t:"Données et taille du réseau",q:[3, 4, 5],b:"Les données sont le carburant. Plus on en a, plus un grand réseau de neurones progresse, alors qu'un petit réseau plafonne vite. On obtient des données en étiquetant à la main, en observant le comportement des utilisateurs ou des machines, ou en récupérant des sources existantes. Les données structurées tiennent dans un tableau ; les données non structurées sont les images, les sons, le texte libre.",e:"Ventes hebdomadaires de scooters = structuré. Photos des scooters ou son du moteur = non structuré.",k:"Grand réseau + beaucoup de données. Plusieurs façons d'en obtenir. Structuré = tableau."},
+{t:"Machine learning ou data science",q:[6, 7],b:"Le machine learning fabrique un logiciel qui tourne en continu et prédit B à partir de A. La data science extrait des conclusions des données pour aider des humains à décider, souvent présentées dans un diaporama. Les deux utilisent les mêmes données mais ne livrent pas la même chose.",e:"Sur les mêmes données de maisons : le ML livre une appli qui estime un prix ; la data science découvre que rénover fait gagner 15 % et conseille de rénover avant de vendre.",k:"ML = logiciel automatique. Data science = conclusions pour décider."},
+{t:"Le vocabulaire qui s'emboîte",q:[8, 9],b:"L'IA est le domaine le plus large. Le machine learning en est une partie, le deep learning une partie du machine learning. « Deep learning » et « réseau de neurones » s'emploient aujourd'hui presque comme synonymes. Malgré son nom, un réseau de neurones ressemble très peu à un cerveau : c'est un calcul mathématique.",e:"Une pub qui devine si tu vas cliquer utilise du deep learning, donc du machine learning, donc de l'IA.",k:"DL ⊂ ML ⊂ IA. Réseau de neurones ≈ deep learning ≠ cerveau."},
+{t:"L'entreprise performante en IA",q:[10, 11],b:"Une entreprise d'IA ne se reconnaît pas à ses outils mais à son organisation : acquisition stratégique de données (parfois via des produits gratuits), entrepôt unifié plutôt que des données éparpillées entre services, repérage des tâches automatisables, nouveaux rôles comme l'ingénieur ML, itération rapide. Comme un magasin avec un site web n'est pas une entreprise Internet.",e:"Google et Baidu sont devenus leaders en IA en suivant ce chemin : projets pilotes, équipes formées, données unifiées, stratégie.",k:"Pas un outil ajouté : une façon de travailler autour des données."},
+{t:"Ce que l'IA sait faire, et pas",q:[12, 13, 14],b:"Bonne intuition : si un humain fait la tâche en une seconde de réflexion et qu'on a beaucoup de données, l'IA peut probablement l'apprendre. Elle bute sur ce qui demande de longues réflexions, de l'empathie ou de la créativité, et sur les concepts très variés pour lesquels on manque d'exemples. Les médias montrent les succès bien plus que les échecs, d'où des attentes parfois irréalistes.",e:"Classer un e-mail « livraison » ou « remboursement » : oui. Répondre avec empathie au client dont le jouet est arrivé trop tard pour sa nièce : très difficile.",k:"Concept simple + beaucoup de données = faisable. Le reste demande une étude technique."},
+{t:"Les deux faiblesses à connaître",q:[15, 16],b:"L'IA a besoin de beaucoup d'exemples là où un humain en voit dix et lit une explication. Elle est aussi peu robuste quand les données de production diffèrent de celles de l'entraînement : nouvelles machines, nouveaux cadrages, nouveaux accents.",e:"Un modèle entraîné dans un hôpital de pointe peut mal fonctionner sur les radiographies d'un appareil plus ancien.",k:"Peu de données ou données différentes = performances qui chutent."},
+{t:"À l'intérieur d'un réseau de neurones",q:[17, 18, 19],b:"Un neurone artificiel fait un petit calcul ; on les empile comme des Lego. Pour les t-shirts, un neurone relie prix et demande ; avec plus d'entrées, des neurones intermédiaires captent l'abordabilité, la notoriété, la qualité perçue, sans qu'on les programme. Pour une image, l'entrée est une grille de nombres ; les premières couches voient des contours, les suivantes des parties du visage, les dernières le visage entier.",e:"Le déverrouillage facial d'un téléphone repose sur un réseau de millions de neurones entraîné sur des millions de photos.",k:"On fournit A et B ; le réseau trouve seul les calculs du milieu."}
+],
+ia2:[
+{t:"Le projet de machine learning",q:[0, 1, 2],b:"Trois étapes : collecter des données (A, B), entraîner le modèle, le déployer. Chaque étape demande des itérations : la première version est souvent mauvaise. Après le lancement, la réalité montre des cas imprévus ; on récupère ces nouvelles données pour mettre le modèle à jour.",e:"Enceinte : enregistrer des gens qui disent « Alexa » ou « bonjour », entraîner, installer, puis corriger les accents mal reconnus. Voiture : repérer aussi les voiturettes de golf.",k:"Collecter → entraîner → déployer, et recommencer."},
+{t:"Le projet de data science",q:[3, 4],b:"Collecter les données, les analyser, proposer des hypothèses et des actions, puis collecter à nouveau pour vérifier l'effet. Le résultat n'est pas un logiciel mais une meilleure décision.",e:"Usine de tasses : l'analyse montre que humidité basse et four trop chaud fissurent les tasses ; on ajuste l'eau du mélange et la température selon l'heure.",k:"Données → analyse → hypothèse → action → nouvelles données."},
+{t:"L'IA dans tous les métiers",q:[5, 6],b:"Les données sont désormais numériques partout. Ventes : prioriser les prospects (ML), optimiser le parcours d'achat (DS). Fabrication : inspection visuelle automatique (ML), réduction des défauts (DS). Recrutement : tri de CV en surveillant les biais (ML), analyse de l'entonnoir (DS). Marketing : recommandations (ML), tests A/B (DS). Agriculture : désherbage de précision (ML), quoi planter et quand (DS).",e:"Un site recommande des chemises bleues à un client qui n'achète que cela : c'est du ML.",k:"Pour chaque métier : un logiciel qui automatise (ML) et des analyses qui éclairent (DS)."},
+{t:"Choisir le bon projet",q:[7, 8, 9],b:"Réunis des experts de l'IA et du métier pour trouver l'intersection entre ce que l'IA sait faire et ce qui a de la valeur. Trois pistes : automatiser des tâches plutôt que des métiers, viser les principaux moteurs de valeur, attaquer les principaux problèmes. Inutile d'attendre le big data : on démarre souvent avec peu.",e:"Inspection de tasses : 100 à 1 000 photos suffisent pour lancer le projet, même si un million serait idéal.",k:"Intersection IA × valeur, des tâches plutôt que des métiers, démarrer avec ce qu'on a."},
+{t:"Valider avant de s'engager",q:[10, 11],b:"Pour un projet de plusieurs mois, on mène deux études. Technique : la précision visée est-elle atteignable, a-t-on les données, combien de temps et de personnes ? Commerciale : le projet réduit-il les coûts, augmente-t-il les revenus, ouvre-t-il une activité ? On y ajoute la question éthique : est-ce bon pour la société ?",e:"Avant le tri de CV : fixer un calendrier d'ingénierie et vérifier qu'on obtiendra assez de CV étiquetés (technique), chiffrer le temps gagné par les recruteurs (commercial).",k:"Faisable ? Rentable ? Éthique ? Quelques semaines d'études évitent des mois perdus."},
+{t:"Construire ou acheter",q:[12, 13],b:"On achète ce qui est standard, comme personne ne fabrique son propre routeur Wi-Fi. Le machine learning peut être interne ou externalisé ; la data science reste plutôt interne car liée au métier. Ne cours pas devant un train : si un grand acteur développe la solution standard, il finira par te dépasser.",e:"Un modèle générique de reconnaissance vocale s'achète ; un modèle entraîné sur les défauts propres à ton usine se construit.",k:"Acheter le standard, construire ce qui est unique."},
+{t:"Travailler avec une équipe d'IA",q:[14, 15, 16, 17],b:"Donne un critère d'acceptation mesurable et des données : un ensemble d'apprentissage pour apprendre, un ensemble de test, différent, pour mesurer (parfois un ensemble de validation en plus). Pense en statistiques et ne vise pas 100 % : données insuffisantes, étiquettes fausses et cas ambigus l'empêchent. Nettoyer les étiquettes ou ajouter des données fait progresser.",e:"10 000 images pour l'apprentissage, 1 000 pour le test. 2 tasses bien classées sur 3 = 66,7 %.",k:"Objectif chiffré + apprentissage + test. 95 % peut suffire à être rentable."},
+{t:"La boîte à outils",q:[18, 19],b:"La communauté de l'IA partage beaucoup : bibliothèques open source (TensorFlow, PyTorch, scikit-learn…), articles gratuits sur arXiv, code sur GitHub (vérifier la licence). Côté matériel, le CPU fait les calculs généraux, le GPU entraîne les grands réseaux. On calcule dans le cloud (AWS, Azure, GCP), sur site, ou en périphérie sur l'appareil lui-même.",e:"Une voiture autonome freine grâce à un processeur embarqué, sans attendre le cloud.",k:"Open source pour aller vite, GPU pour entraîner, edge pour réagir en temps réel."}
+],
+ia3:[
+{t:"Le pipeline de l'enceinte connectée",q:[0, 1, 2],b:"Un produit d'IA enchaîne plusieurs briques. Mot de réveil (« Hey terminal » : 0 ou 1), reconnaissance vocale (audio → texte), reconnaissance d'intention (texte → « blague », « minuteur »…, avec extraction d'informations comme la durée), puis exécution par du code classique. Dans une grande entreprise, une équipe par brique.",e:"« Fais-moi rire » et « raconte une blague » doivent mener à la même intention.",k:"Réveil → vocal → intention → exécution. L'exécution n'est pas de l'IA."},
+{t:"Le pipeline de la voiture autonome",q:[3, 4, 5],b:"Perception : caméras, LIDAR, radar repèrent voitures, piétons, feux, marquages (apprentissage supervisé). Prédiction : où iront-ils ? Planification : quel chemin et quelle vitesse, en respectant le code. Contrôle : volant, accélérateur, freins. S'y ajoutent localisation, cartes HD et fusion des capteurs, en temps réel et avec des enjeux de sécurité.",e:"Une voiture garée à droite : la planification prévoit un léger écart à gauche, le contrôle braque et accélère doucement.",k:"Percevoir → prédire → planifier → contrôler."},
+{t:"Les rôles d'une équipe d'IA",q:[6, 7, 8, 9],b:"Ingénieur logiciel (souvent la moitié de l'équipe ou plus), ingénieur ML (construit et entraîne les modèles), chercheur ML (fait avancer l'état de l'art), scientifique appliqué (adapte la recherche au produit), data scientist (analyse et éclaire), ingénieur de la donnée (stocke et organise), chef de produit IA (décide quoi construire). Dans une petite équipe, une même personne cumule plusieurs rôles.",e:"Pour un détecteur de mot de réveil, on recrute d'abord un ingénieur ML, pas un chercheur.",k:"Un rôle par besoin ; en petite équipe, on cumule."},
+{t:"Le plan de transformation : étapes 1 à 3",q:[10, 11, 12, 13],b:"1. Projets pilotes : choisir des projets qui réussiront et montreront des résultats en 6 à 12 mois, quitte à les externaliser. 2. Équipe IA centralisée, en matrice avec les unités, financée au départ par la direction. 3. Formation adaptée : environ 4 h pour les dirigeants, 12 h pour les managers, 100 h pour les ingénieurs. Les étapes se chevauchent.",e:"Premier pilote d'une enceinte : mieux détecter le mot de réveil dans le bruit. Pas le plus stratégique, mais visible et réussi.",k:"Pilote réussi, équipe centrale, formation par niveau."},
+{t:"Le plan de transformation : étapes 4 et 5",q:[14, 15, 16],b:"4. Stratégie IA, une fois l'expérience acquise : viser une niche, exploiter le cycle vertueux, bâtir un capital de données et un entrepôt central. 5. Communication interne (rassurer les salariés) et externe (investisseurs, clients, régulateurs, candidats).",e:"Blue River : quelques photos de cultures, un premier produit, des agriculteurs, plus de photos, un meilleur produit.",k:"Stratégie après l'expérience. Produit → utilisateurs → données → meilleur produit."},
+{t:"Les cinq pièges",q:[17],b:"Ne pas attendre de l'IA qu'elle résolve tout. Ne pas compter sur deux ou trois ingénieurs ML seuls : les associer aux experts du métier. Ne pas espérer un succès du premier coup. Ne pas plaquer un planning classique : fixer avec l'équipe des jalons et des indicateurs adaptés. Ne pas attendre des superstars : des ingénieurs formés en ligne suffisent pour démarrer.",e:"Indicateur adapté : « passer de 80 % à 90 % de commandes reconnues en 6 mois » plutôt qu'une date de perfection.",k:"Réalisme, équipes mixtes, itérations, bons indicateurs, et commencer maintenant."},
+{t:"Au-delà de l'apprentissage supervisé",q:[18, 19],b:"Non supervisé : trouver des groupes sans étiquettes. Transfert : réutiliser un modèle appris sur beaucoup de données pour une tâche voisine qui en a peu. Renforcement : apprendre par récompenses et pénalités (hélicoptère autonome, AlphaGo). GAN : un générateur et un discriminateur s'affrontent pour créer des images réalistes. Graphe de connaissances : relier des entités et leurs attributs, comme le panneau Léonard de Vinci de Google. L'apprentissage supervisé reste celui qui crée le plus de valeur.",e:"Chips : étudiants contre actifs, découverts sans étiquette. Voiturettes de golf : 1 000 images grâce au transfert.",k:"Supervisé domine ; non supervisé, transfert, renforcement, GAN et graphes complètent."}
+]
+};
+
+// ===== Version communauté : comptes Supabase, correction serveur, classements =====
+const sb=window.CDQ?CDQ.sb:null;
+const SITE="https://tokenforgefan.github.io/quiz-blockchain/ia.html";
+const HUB="https://tokenforgefan.github.io/chaine-des-quiz/";
+const app=document.getElementById("app");
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function fakeHash(id,score){let h=0;const s=id+score;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;let out="";for(let i=0;i<4;i++){h=(h*1103515245+12345)>>>0;out+=h.toString(16).padStart(8,"0").slice(0,4)}return "0000"+out.slice(0,12)}
+const errMsg=e=>{const m=(e&&(e.message||e.error_description||e.msg))||String(e||"");
+  if(/fetch|network|Failed/i.test(m))return "Pas de connexion internet. Le quiz communautaire a besoin d'internet pour corriger tes réponses.";
+  if(/rate limit|too many/i.test(m))return "Trop de demandes d'e-mail d'un coup. Patiente quelques minutes puis réessaie.";
+  if(/duplicate|unique/i.test(m))return "Ce pseudo est déjà pris, choisis-en un autre.";
+  if(/check constraint|profiles_pseudo/i.test(m))return "Pseudo invalide : 3 à 20 caractères, lettres, chiffres, _ - . uniquement.";
+  if(/expired|invalid.*token|otp/i.test(m))return "Code incorrect ou expiré. Redemande un code.";
+  return m};
+
+let ME=null;          // {id,email,pseudo}
+let prog={};          // {s1:{best,passed}}
+let QCACHE={};        // questions par bloc (sans réponses)
+const unlocked=i=>i===0||(prog[LEVELS[i-1].id]&&prog[LEVELS[i-1].id].passed);
+
+function busy(msg){app.innerHTML=`<p class="rule" style="margin-top:40px">${esc(msg||"Chargement…")}</p>`}
+
+// ---------- Compte : géré par la page d'accueil ----------
+function login(){ location.href = CDQ.loginUrl(); }
+async function afterAuth(){
+  ME = await CDQ.me();
+  if(ME && !ME.pseudo){ ME = null; return login(); }
+  await loadProgress(); home();
+}
+async function loadProgress(){prog={};if(!ME)return;
+  const{data}=await sb.rpc("my_progress");(data||[]).forEach(r=>prog[r.level_id]={best:+r.best,passed:r.passed})}
+
+// ---------- La chaîne ----------
+function home(){
+  const done=LEVELS.filter(l=>prog[l.id]&&prog[l.id].passed).length;
+  CDQ.menu("quiz");
+  let h=`<h1>Quiz à niveaux · Intelligence artificielle</h1>
+  <p class="lede">Testez vos connaissances sur l'intelligence artificielle (cours IA pour tous). Chaque partie est un bloc : suis d'abord son cours, puis passe le test pour le miner et débloquer le suivant. Grimpe dans le classement de la communauté !</p>
+  <p class="rule">20 questions par bloc · il faut <b>au moins ${PASS}/20</b> pour passer · ${done}/${LEVELS.length} blocs minés</p>
+  <p class="rule">Points négatifs : bonne réponse <b>+1</b> · mauvaise réponse <b>−0,5</b> · question passée <b>0</b>. Dans le doute, mieux vaut passer.</p>
+  ${ME&&ME.pseudo?"":`<p class="note">👉 Les cours sont ouverts à tous. Pour passer les tests et entrer dans le classement, <a href="${CDQ.loginUrl()}">connecte-toi avec ton e-mail</a>.</p>`}
+  <div class="chain">`;
+  LEVELS.forEach((l,i)=>{
+    const p=prog[l.id], open=unlocked(i), mined=p&&p.passed;
+    if(i>0)h+=`<div class="link ${mined||unlocked(i)?"ok":""}" aria-hidden="true"></div>`;
+    const cls=mined?"mined":open?"open":"locked";
+    let chip=mined?`<span class="chip ok">Miné</span>`:open?(p?`<span class="chip ko">À repasser</span>`:`<span class="chip">Disponible</span>`):`<span class="chip">Verrouillé</span>`;
+    let meta=mined?`hash ${fakeHash(l.id,p.best)} · meilleur score ${fmt(p.best)}/20`:open?(p?`meilleur score ${fmt(p.best)}/20 · encore ${fmt(PASS-p.best)} point${PASS-p.best>1?"s":""} à gagner`:l.src):`Réussis le bloc ${i} pour déverrouiller`;
+    h+=`<div class="block ${cls}"><div class="num">${String(i+1).padStart(2,"0")}</div><div class="info">
+      <h2>${esc(l.title)}</h2><div class="meta">${esc(meta)}</div>
+      <div class="row">${chip}<button class="${mined||p?"ghost":"btn"}" data-learn="${i}">${p?"Revoir le cours":"1. Suivre le cours"}</button>${open?`<button class="${mined||!p?"ghost":"btn"}" data-go="${i}">${mined?"Rejouer le test":p?"Retenter le test":"2. Passer le test"}</button>`:""}</div></div></div>`;
+  });
+  h+=`</div><div class="foot"><span>Sur tablette : menu du navigateur → « Ajouter à l'écran d'accueil ».</span><a href="https://tokenforgefan.github.io/Arcade-blockchain/ia.html">🎮 Arcade-IA</a></div>`;
+  app.innerHTML=h;
+  app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>start(+b.dataset.go));
+  app.querySelectorAll("[data-learn]").forEach(b=>b.onclick=()=>lesson(+b.dataset.learn));
+}
+
+function lesson(i){
+  const l=LEVELS[i],ns=COURSE[l.id]||[];
+  let h=`<div class="top"><button class="ghost" id="quit">← Chaîne</button><span class="qnum">Bloc ${i+1} · Cours</span></div>
+  <h1 style="margin-top:18px">${esc(l.title)}</h1><p class="rule">${esc(l.src)} · ${ns.length} leçons · ensuite, test de ${TOTAL} questions (+1 / −0,5 / 0 si passée, ${PASS}/20 pour réussir)</p>
+  <div class="course">`;
+  ns.forEach((n,k)=>{h+=`<section class="lesson"><span class="cnt">Leçon ${k+1}/${ns.length}</span><h3>${esc(n.t)}</h3><p>${esc(n.b)}</p>
+    <p class="ex"><b>Exemple concret</b>${esc(n.e)}</p><p class="key"><b>À retenir</b>${esc(n.k)}</p></section>`});
+  h+=`</div><div class="row" style="margin-top:20px"><button class="btn" id="go">J'ai appris le cours, passer le test →</button></div>`;
+  app.innerHTML=h;window.scrollTo(0,0);
+  document.getElementById("quit").onclick=home;
+  document.getElementById("go").onclick=()=>start(i);
+}
+
+// ---------- Partie (corrigée par le serveur) ----------
+let S=null;
+async function start(i){
+  if(!ME||!ME.pseudo)return login();
+  if(!unlocked(i))return home();
+  const l=LEVELS[i];busy("Préparation du bloc…");
+  try{
+    if(!QCACHE[l.id]){const{data,error}=await sb.rpc("get_questions",{p_level:l.id});if(error)throw error;QCACHE[l.id]=data}
+    const{data:att,error}=await sb.rpc("start_attempt",{p_level:l.id});if(error)throw error;
+    const qs=shuffle(QCACHE[l.id]).slice(0,TOTAL).map(q=>{const order=shuffle(q.options.map((_,k)=>k));return{q:q.prompt,o:order.map(k=>q.options[k]),order,ix:q.idx}});
+    S={i,att,qs,n:0,score:0,good:0,bad:0,skip:0,miss:[]};ask();window.scrollTo(0,0);
+  }catch(e){app.innerHTML=`<p class="msg">${esc(errMsg(e))}</p><button class="btn" id="b">← Chaîne</button>`;document.getElementById("b").onclick=home}
+}
+function ask(){
+  const q=S.qs[S.n];
+  app.innerHTML=`<div class="top"><button class="ghost" id="quit">← Quitter</button><span class="qnum">Bloc ${S.i+1} · Question ${S.n+1}/${S.qs.length} · ${fmt(S.score)} pt${Math.abs(S.score)>1?"s":""}</span></div>
+  <div class="bar"><i style="width:${S.n/S.qs.length*100}%"></i></div>
+  <p class="q">${esc(q.q)}</p>
+  <div class="opts">${q.o.map((t,k)=>`<button class="opt" data-k="${k}"><span class="k">${"ABCDEF"[k]}</span><span>${esc(t)}</span></button>`).join("")}</div>
+  <div class="next" style="justify-content:flex-start"><button class="ghost" id="skip">Je ne sais pas, passer (0 point)</button></div>
+  <div id="fb"></div>`;
+  document.getElementById("quit").onclick=()=>{S=null;home()};
+  document.getElementById("skip").onclick=()=>answer(-1);
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(+b.dataset.k));
+}
+async function answer(k){
+  const q=S.qs[S.n],skipped=k<0;
+  app.querySelectorAll(".opt,#skip").forEach(b=>b.disabled=true);
+  let r;
+  try{const{data,error}=await sb.rpc("answer_question",{p_attempt:S.att,p_idx:q.ix,p_choice:skipped?null:q.order[k]});if(error)throw error;r=data}
+  catch(e){document.getElementById("fb").innerHTML=`<p class="msg">${esc(errMsg(e))}</p><div class="next"><button class="btn" id="re">Réessayer</button></div>`;
+    document.getElementById("re").onclick=()=>{app.querySelectorAll(".opt,#skip").forEach(b=>b.disabled=false);document.getElementById("fb").innerHTML=""};return}
+  const right=q.order.indexOf(r.answer),ok=r.ok;q.a=right;q.e=r.explanation;
+  if(ok){S.score+=PTS_OK;S.good++}else if(skipped){S.skip++;S.miss.push({...q,you:null})}else{S.score+=PTS_KO;S.bad++;S.miss.push({...q,you:q.o[k]})}
+  app.querySelectorAll(".opt").forEach((b,j)=>{if(j===right)b.classList.add("right");else if(j===k)b.classList.add("wrong")});
+  const last=S.n===S.qs.length-1;
+  const head=ok?"Bonne réponse · +1":skipped?"Question passée · 0 point":"Mauvaise réponse · −0,5";
+  document.getElementById("fb").innerHTML=`<div class="fb ${ok?"ok":"ko"}"><strong>${head}</strong>${esc(r.explanation)}</div>
+  <div class="next"><button class="btn" id="nx">${last?"Voir mon score":"Question suivante →"}</button></div>`;
+  const nx=document.getElementById("nx");nx.focus();
+  nx.onclick=()=>{if(last)finish();else{S.n++;ask()}};
+}
+function courseHTML(id,miss){
+  if(!miss.length)return `<div class="course"><h2>Mini-cours</h2><p>Aucune erreur ni question passée : rien à revoir sur ce bloc.</p></div>`;
+  const groups=(COURSE[id]||[]).map(n=>({n,items:miss.filter(m=>n.q.includes(m.ix))})).filter(g=>g.items.length).sort((a,b)=>b.items.length-a.items.length);
+  let h=`<div class="course"><h2>Mini-cours sur tes erreurs</h2><p>${groups.length} notion${groups.length>1?"s":""} à revoir, de la plus ratée à la moins ratée.</p>`;
+  groups.forEach(g=>{const c=g.items.length;
+    h+=`<section class="lesson"><span class="cnt">${c} question${c>1?"s":""} ratée${c>1?"s":""} ou passée${c>1?"s":""}</span><h3>${esc(g.n.t)}</h3>
+    <p>${esc(g.n.b)}</p><p class="ex"><b>Exemple concret</b>${esc(g.n.e)}</p><p class="key"><b>À retenir</b>${esc(g.n.k)}</p>
+    <details><summary>Tes questions sur cette notion (${c})</summary><div class="qa">${g.items.map(m=>`<div><p>${esc(m.q)}</p>${m.you?`<p class="you">Ta réponse : ${esc(m.you)}</p>`:`<p class="you">Question passée</p>`}<p class="a">Bonne réponse : ${esc(m.o[m.a])}</p></div>`).join("")}</div></details></section>`});
+  return h+`</div>`;
+}
+async function finish(){
+  const l=LEVELS[S.i];busy("Calcul du score par le serveur…");
+  let r;try{const{data,error}=await sb.rpc("finish_attempt",{p_attempt:S.att});if(error)throw error;r=data}
+  catch(e){app.innerHTML=`<p class="msg">${esc(errMsg(e))}</p><button class="btn" id="re">Réessayer</button>`;document.getElementById("re").onclick=finish;return}
+  const final=+r.score,pass=r.passed;await loadProgress();
+  const nextOpen=pass&&S.i+1<LEVELS.length,gap=PASS-final;
+  let h=`<div class="top"><span class="qnum">Bloc ${S.i+1} · ${esc(l.title)}</span></div>
+  <div style="margin-top:24px" class="score">${fmt(final)}<small>/20</small></div>
+  <p class="qnum" style="margin:10px 0 0">${r.correct} bonne${r.correct>1?"s":""} (+${r.correct}) · ${r.wrong} fausse${r.wrong>1?"s":""} (−${fmt(r.wrong*0.5)}) · ${r.skipped} passée${r.skipped>1?"s":""} · score vérifié par le serveur</p>
+  <p class="verdict">${pass?(nextOpen?`Bloc miné. Le bloc ${S.i+2} est déverrouillé.`:`Bloc miné. Tu as terminé toute la chaîne disponible.`):`Il te manque ${fmt(gap)} point${gap>1?"s":""} pour miner ce bloc. Relis les corrections ci-dessous puis retente.`}</p>
+  <div class="row">${nextOpen?`<button class="btn" id="nxt">Bloc suivant →</button>`:""}<button class="${pass?"ghost":"btn"}" id="again">Retenter ce bloc</button><button class="ghost" id="share">📣 Partager mon résultat</button><button class="ghost" id="lb">🏆 Classement</button><button class="ghost" id="map">Voir la chaîne</button></div>`;
+  h+=courseHTML(l.id,S.miss);
+  app.innerHTML=h;window.scrollTo(0,0);
+  const i=S.i;
+  const n=document.getElementById("nxt");if(n)n.onclick=()=>start(i+1);
+  document.getElementById("again").onclick=()=>start(i);
+  document.getElementById("map").onclick=home;
+  document.getElementById("lb").onclick=()=>location.href=HUB+"#classement?onglet=level&bloc="+l.id;
+  document.getElementById("share").onclick=()=>shareCard(i,final,pass);
+}
+
+// ---------- Carte de résultat partageable ----------
+async function shareCard(i,score,pass){
+  const l=LEVELS[i],c=document.createElement("canvas");c.width=c.height=1080;const x=c.getContext("2d");
+  const g=x.createLinearGradient(0,0,1080,1080);g.addColorStop(0,"#0f1716");g.addColorStop(1,"#2a1d06");x.fillStyle=g;x.fillRect(0,0,1080,1080);
+  x.strokeStyle="#e2a23b";x.lineWidth=6;x.strokeRect(50,50,980,980);
+  x.fillStyle="#e2a23b";x.font="700 44px system-ui,sans-serif";x.fillText("⛓ LA CHAÎNE DES QUIZ",100,160);
+  x.fillStyle="#e4ecea";x.font="500 40px system-ui,sans-serif";
+  const words=("Bloc "+(i+1)+" · "+l.title).split(" ");let line="",y=260;
+  words.forEach(w=>{if(x.measureText(line+w).width>860){x.fillText(line,100,y);line="";y+=54}line+=w+" "});x.fillText(line,100,y);
+  x.fillStyle=pass?"#5fcf94":"#f08178";x.font="800 260px system-ui,sans-serif";x.fillText(fmt(score),100,640);const sw=x.measureText(fmt(score)).width;
+  x.fillStyle="#93a3a0";x.font="600 80px system-ui,sans-serif";x.fillText("/20",120+sw,640);
+  x.fillStyle="#e4ecea";x.font="700 56px system-ui,sans-serif";x.fillText(pass?"✅ Bloc miné !":"⛏ En cours de minage…",100,780);
+  x.fillStyle="#93a3a0";x.font="500 38px system-ui,sans-serif";x.fillText("par "+(ME&&ME.pseudo||""),100,860);
+  x.fillStyle="#e2a23b";x.font="600 34px ui-monospace,monospace";x.fillText(SITE.replace("https://",""),100,960);
+  const text=`J'ai fait ${fmt(score)}/20 au bloc ${i+1} « ${l.title} »  (thème IA) de la Chaîne des Quiz${pass?" et je l'ai miné ⛏":""}. À toi de jouer : ${SITE}`;
+  const blob=await new Promise(r=>c.toBlob(r,"image/png"));
+  const file=new File([blob],"resultat-quiz.png",{type:"image/png"});
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text});return}}catch(e){if(e.name==="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="resultat-quiz.png";a.click();
+  try{await navigator.clipboard.writeText(text);alertBox("Image téléchargée, et texte copié : colle-le avec l'image sur ton réseau.")}catch(e){alertBox("Image téléchargée.")}
+}
+function alertBox(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),4000)}
+
+// ---------- Démarrage ----------
+(async()=>{
+  if(!sb){CDQ&&CDQ.menu&&CDQ.menu("quiz");app.innerHTML=`<p class="msg">Impossible de charger le module de connexion. Vérifie ta connexion internet puis recharge la page.</p>`;return}
+  busy();
+  try{await afterAuth()}catch(e){home()}
+})();
+
+</script>
+</body>
+</html>

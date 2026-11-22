@@ -1,6 +1,6 @@
 -- 160 questions (généré depuis index.html). Réexécutable.
 begin;
-delete from public.questions;
+delete from public.questions where level_id not like 'ia%';  -- ne touche pas aux blocs IA (06_theme_ia.sql)
 insert into public.levels(id,ord,title,src) values('s1',1,'Introduction à la blockchain et au Web3','Session 1 · support PDF et vidéos') on conflict(id) do update set ord=excluded.ord,title=excluded.title,src=excluded.src;
 insert into public.questions values('s1',0,'Qu''est-ce qu''une blockchain, au sens le plus simple ?','["Un registre partagé où l''on ajoute des blocs sans pouvoir réécrire les anciens","Une base de données gérée par une seule banque","Un logiciel de minage","Un type de cryptomonnaie"]'::jsonb,0,'C''est un registre distribué, en ajout seul : chaque participant en garde une copie et on n''ajoute que de nouveaux blocs.');
 insert into public.questions values('s1',1,'Que se passe-t-il si on change une seule lettre dans l''entrée d''une fonction de hachage ?','["Le hash change d''une lettre","Le hash reste identique","Le hash devient complètement différent","La fonction renvoie une erreur"]'::jsonb,2,'C''est l''effet avalanche : une infime modification donne une empreinte totalement différente. C''est ce qui rend toute falsification visible.');
